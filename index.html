@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker NAS Container Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            background: #f1f1f1;
+            padding: 10px;
+            border-radius: 4px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Docker NAS Container Creator</h1>
+        <label for="path">Volume Path</label>
+        <input type="text" id="path" placeholder="/path/to/server" value="/path/to/server">
+
+        <label for="port">Port</label>
+        <input type="number" id="port" value="445">
+
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="user" value="user">
+
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="password" value="password">
+
+        <label for="restart">Restart Policy</label>
+        <select id="restart">
+            <option value="no">No</option>
+            <option value="always">Always</option>
+            <option value="unless-stopped" selected>Unless Stopped</option>
+            <option value="on-failure">On Failure</option>
+        </select>
+
+        <button onclick="generateCommand()">Generate Docker Command</button>
+
+        <h3>Generated Command:</h3>
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        function generateCommand() {
+            const path = document.getElementById('path').value;
+            const port = document.getElementById('port').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const restartPolicy = document.getElementById('restart').value;
+
+            if (!path || !port || !username || !password) {
+                alert("All fields are required!");
+                return;
+            }
+
+            const command = `docker run -d \\
+  --name nas-container \\
+  -p ${port}:445 \\
+  -v ${path}:/data \\
+  -e USERNAME=${username} \\
+  -e PASSWORD=${password} \\
+  --restart ${restartPolicy} \\
+  dperson/samba \\
+  -u "${username};${password}" \\
+  -s "shared;/data;yes;no;no;all;none"`;
+
+            document.getElementById('output').textContent = command;
+        }
+    </script>
+</body>
+</html>
