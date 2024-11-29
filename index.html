@@ -96,16 +96,7 @@
                 return;
             }
 
-            const command = `docker run -d \\
-  --name nas-container \\
-  -p ${port}:445 \\
-  -v ${path}:/data \\
-  -e USERNAME=${username} \\
-  -e PASSWORD=${password} \\
-  --restart ${restartPolicy} \\
-  dperson/samba \\
-  -u "${username};${password}" \\
-  -s "shared;/data;yes;no;no;all;none"`;
+            const command = `docker run -d --name nas-container -p ${port}:445 -v ${path}:/data -e USERNAME=${username} -e PASSWORD=${password} --restart ${restartPolicy} dperson/samba -u "${username};${password}" -s "shared;/data;yes;no;no;all;none"`;
 
             document.getElementById('output').textContent = command;
         }
