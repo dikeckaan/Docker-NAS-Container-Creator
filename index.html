@@ -46,11 +46,27 @@
         button:hover {
             background-color: #0056b3;
         }
+        .output-container {
+            margin-top: 20px;
+            display: none;
+        }
         .output {
             background: #f1f1f1;
             padding: 10px;
             border-radius: 4px;
             word-wrap: break-word;
+        }
+        .copy-button {
+            margin-top: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .copy-button:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -69,6 +85,12 @@
         <label for="password">Password</label>
         <input type="password" id="password" placeholder="password" value="password">
 
+        <label for="uid">User ID (UID)</label>
+        <input type="number" id="uid" placeholder="1000">
+
+        <label for="gid">Group ID (GID)</label>
+        <input type="number" id="gid" placeholder="1000">
+
         <label for="restart">Restart Policy</label>
         <select id="restart">
             <option value="no">No</option>
@@ -79,8 +101,11 @@
 
         <button onclick="generateCommand()">Generate Docker Command</button>
 
-        <h3>Generated Command:</h3>
-        <div id="output" class="output"></div>
+        <div id="outputContainer" class="output-container">
+            <h3>Generated Command:</h3>
+            <div id="output" class="output"></div>
+            <button class="copy-button" onclick="copyCommand()">Copy</button>
+        </div>
     </div>
 
     <script>
@@ -89,16 +114,37 @@
             const port = document.getElementById('port').value;
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+            const uid = document.getElementById('uid').value;
+            const gid = document.getElementById('gid').value;
             const restartPolicy = document.getElementById('restart').value;
 
             if (!path || !port || !username || !password) {
-                alert("All fields are required!");
+                alert("All fields except UID and GID are required!");
                 return;
             }
 
-            const command = `docker run -d --name nas-container -p ${port}:445 -v ${path}:/data -e USERNAME=${username} -e PASSWORD=${password} --restart ${restartPolicy} dperson/samba -u "${username};${password}" -s "shared;/data;yes;no;no;all;none"`;
+            let command = `docker run -d --name nas-container -p ${port}:445 -v ${path}:/data -e USERNAME=${username} -e PASSWORD=${password}`;
+
+            if (uid) {
+                command += ` -e UID=${uid}`;
+            }
+            if (gid) {
+                command += ` -e GID=${gid}`;
+            }
+
+            command += ` --restart ${restartPolicy} dperson/samba -u "${username};${password}" -s "shared;/data;yes;no;no;all;none"`;
 
             document.getElementById('output').textContent = command;
+            document.getElementById('outputContainer').style.display = 'block';
+        }
+
+        function copyCommand() {
+            const output = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                alert('Command copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy command: ' + err);
+            });
         }
     </script>
 </body>
