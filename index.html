@@ -1,151 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docker NAS Container Creator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 24px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        input, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        button {
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .output-container {
-            margin-top: 20px;
-            display: none;
-        }
-        .output {
-            background: #f1f1f1;
-            padding: 10px;
-            border-radius: 4px;
-            word-wrap: break-word;
-        }
-        .copy-button {
-            margin-top: 10px;
-            background-color: #28a745;
-            color: #fff;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        .copy-button:hover {
-            background-color: #218838;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Docker NAS Container Creator</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f9f9f9; margin:0; padding:20px; }
+    .container { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    h1 { text-align: center; margin-top: 0; }
+    label { font-weight: bold; display: block; margin: 12px 0 6px; }
+    input, select, button, textarea {
+      width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    input[type="checkbox"], input[type="radio"] { width: auto; margin-right: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .muted { font-size: 12px; color: #666; margin-top: 4px; }
+    .inline { display:flex; align-items:center; gap:8px; margin-top:10px; }
+    .env-block { border: 1px dashed #ccc; border-radius: 6px; padding: 12px; background: #fafafa; }
+    button { background:#007bff; color:#fff; border:none; margin-top:15px; cursor:pointer; }
+    button:hover { background:#0056b3; }
+    .secondary { background:#6c757d; }
+    .secondary:hover { background:#545b62; }
+    .success { background:#28a745; }
+    .success:hover { background:#218838; }
+    .error { color: #d00; margin: 10px 0; }
+    .output-container { margin-top: 20px; display: none; }
+    .output { background: #f1f1f1; padding: 12px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; }
+    .hidden { display: none; }
+    textarea { min-height: 140px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Docker NAS Container Creator</h1>
-        <label for="path">Volume Path</label>
-        <input type="text" id="path" placeholder="/path/to/server" value="/path/to/server">
+  <div class="container">
+    <h1>Docker NAS Container Creator</h1>
 
-        <label for="port">Port</label>
-        <input type="number" id="port" value="445">
+    <label for="name">Container Name</label>
+    <input type="text" id="name" value="nas-container"/>
 
-        <label for="username">Username</label>
-        <input type="text" id="username" placeholder="user" value="user">
+    <label for="path">Volume Path</label>
+    <input type="text" id="path" value="/path/to/server"/>
 
-        <label for="password">Password</label>
-        <input type="password" id="password" placeholder="password" value="password">
-
-        <label for="uid">User ID (UID)</label>
-        <input type="number" id="uid" placeholder="1000">
-
-        <label for="gid">Group ID (GID)</label>
-        <input type="number" id="gid" placeholder="1000">
-
-        <label for="restart">Restart Policy</label>
-        <select id="restart">
-            <option value="no">No</option>
-            <option value="always">Always</option>
-            <option value="unless-stopped" selected>Unless Stopped</option>
-            <option value="on-failure">On Failure</option>
-        </select>
-
-        <button onclick="generateCommand()">Generate Docker Command</button>
-
-        <div id="outputContainer" class="output-container">
-            <h3>Generated Command:</h3>
-            <div id="output" class="output"></div>
-            <button class="copy-button" onclick="copyCommand()">Copy</button>
-        </div>
+    <!-- Ports -->
+    <div class="inline">
+      <input type="checkbox" id="allPorts"/>
+      <label for="allPorts" style="margin:0; font-weight:600;">Expose all SMB ports (137,138,139,445)</label>
     </div>
 
-    <script>
-        function generateCommand() {
-            const path = document.getElementById('path').value;
-            const port = document.getElementById('port').value;
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const uid = document.getElementById('uid').value;
-            const gid = document.getElementById('gid').value;
-            const restartPolicy = document.getElementById('restart').value;
+    <label for="ports">Port(s)</label>
+    <input type="text" id="ports" value="445" placeholder="445 or 137,138,139,445"/>
+    <div class="muted">Enter one port (e.g. <code>445</code>) or multiple, comma-separated (e.g. <code>137,138,139,445</code>). Leave empty to expose no ports.</div>
 
-            if (!path || !port || !username || !password) {
-                alert("All fields except UID and GID are required!");
-                return;
-            }
+    <!-- Inline creds (used only when envMode = none) -->
+    <div id="inlineCreds">
+      <div class="row">
+        <div>
+          <label for="username">Username</label>
+          <input type="text" id="username" value="user"/>
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input type="password" id="password" value="password"/>
+        </div>
+      </div>
 
-            let command = `docker run -d --name nas-container -p ${port}:445 -v ${path}:/data -e USERNAME=${username} -e PASSWORD=${password}`;
+      <div class="row">
+        <div>
+          <label for="uid">User ID (UID)</label>
+          <input type="number" id="uid" value="1000"/>
+        </div>
+        <div>
+          <label for="gid">Group ID (GID)</label>
+          <input type="number" id="gid" value="1000"/>
+        </div>
+      </div>
+    </div>
 
-            if (uid) {
-                command += ` -e UID=${uid}`;
-            }
-            if (gid) {
-                command += ` -e GID=${gid}`;
-            }
+    <label for="restart">Restart Policy</label>
+    <select id="restart">
+      <option value="no">No</option>
+      <option value="always">Always</option>
+      <option value="unless-stopped" selected>Unless Stopped</option>
+      <option value="on-failure">On Failure</option>
+    </select>
 
-            command += ` --restart ${restartPolicy} dperson/samba -u "${username};${password}" -s "shared;/data;yes;no;no;all;none"`;
+    <!-- ENV MODE -->
+    <h3 style="margin-top:18px;">Environment Variables</h3>
+    <div class="env-block">
+      <div class="inline"><input type="radio" name="envmode" id="envNone" value="none" checked><label for="envNone" style="margin:0;">No .env (use inline fields above)</label></div>
+      <div class="inline"><input type="radio" name="envmode" id="envFile" value="file"><label for="envFile" style="margin:0;">Use external .env file</label></div>
+      <div id="envFileRow" class="row hidden" style="margin-top:8px;">
+        <div>
+          <label for="envPath">.env file path</label>
+          <input type="text" id="envPath" value="./nas.env" placeholder="./nas.env"/>
+        </div>
+      </div>
 
-            document.getElementById('output').textContent = command;
-            document.getElementById('outputContainer').style.display = 'block';
+      <div class="inline" style="margin-top:10px;"><input type="radio" name="envmode" id="envEditor" value="editor"><label for="envEditor" style="margin:0;">Build .env here</label></div>
+      <div id="envEditorPanel" class="hidden" style="margin-top:8px;">
+        <div class="row">
+          <div>
+            <label for="envFilename">.env filename for command & download</label>
+            <input type="text" id="envFilename" value="./nas.env" placeholder="./nas.env"/>
+          </div>
+        </div>
+        <label for="envText">.env contents (KEY=VALUE per line)</label>
+        <textarea id="envText">USERNAME=user
+PASSWORD=supersecret
+# Optional:
+# UID=1000
+# GID=1000
+</textarea>
+        <div class="inline" style="gap:12px;">
+          <button type="button" id="btnValidateEnv">Validate .env</button>
+          <button type="button" class="success" id="btnDownloadEnv">Download .env</button>
+          <span id="envStatus" class="muted"></span>
+        </div>
+      </div>
+    </div>
+
+    <h3>Share Settings</h3>
+    <label for="shareName">Share Name</label>
+    <input type="text" id="shareName" value="shared"/>
+    <div class="inline"><input type="checkbox" id="readOnly"/><label for="readOnly" style="margin:0;">Read-only</label></div>
+    <div class="inline"><input type="checkbox" id="guest"/><label for="guest" style="margin:0;">Allow guest access</label></div>
+
+    <div id="error" class="error"></div>
+    <button onclick="generateCommand()">Generate Docker Command</button>
+
+    <div id="outputContainer" class="output-container">
+      <h3>Generated Command:</h3>
+      <div id="output" class="output"></div>
+      <button class="success" onclick="copyCommand()">Copy</button>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function trimCSV(str) {
+      return str.split(",").map(s => s.trim()).filter(Boolean);
+    }
+    function buildPortFlags(portsCSV, allPortsChecked) {
+      const text = (portsCSV || "").trim();
+      if (!text) return "";
+      const ports = trimCSV(text);
+      if (ports.length === 1 && !allPortsChecked) {
+        const host = ports[0];
+        return `-p ${host}:445`;
+      }
+      return ports.map(p => `-p ${p}:${p}`).join(" ");
+    }
+    function buildShare(name, readOnly, guest) {
+      const ro = readOnly ? "yes" : "no";
+      const ga = guest ? "yes" : "no";
+      return `-s "${name};/data;${ro};${ga};no;all;none"`;
+    }
+    function multilineify(parts) {
+      return parts.map((p, i) => (i === 0 ? p : "  " + p)).join(" \\\n");
+    }
+    function parseEnv(text) {
+      const lines = text.split(/\r?\n/);
+      const out = {};
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line || line.startsWith("#")) continue;
+        const eq = line.indexOf("=");
+        if (eq === -1) continue;
+        const key = line.slice(0, eq).trim();
+        const val = line.slice(eq + 1).trim();
+        if (key) out[key] = val;
+      }
+      return out;
+    }
+    function download(filename, content) {
+      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename.replace(/^.*\//, "");
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+    }
+
+    // Port toggle
+    const allPortsEl = $("allPorts");
+    const portsEl = $("ports");
+    allPortsEl.addEventListener("change", () => {
+      if (allPortsEl.checked) {
+        portsEl.placeholder = "137,138,139,445";
+        if (!portsEl.value.trim() || portsEl.value.trim() === "445") {
+          portsEl.value = "137,138,139,445";
         }
-
-        function copyCommand() {
-            const output = document.getElementById('output').textContent;
-            navigator.clipboard.writeText(output).then(() => {
-                alert('Command copied to clipboard!');
-            }).catch(err => {
-                alert('Failed to copy command: ' + err);
-            });
+      } else {
+        portsEl.placeholder = "445";
+        const vals = trimCSV(portsEl.value);
+        if (vals.length !== 1) {
+          portsEl.value = "445";
         }
-    </script>
+      }
+    });
+
+    // Env mode toggling
+    const envNoneEl   = $("envNone");
+    const envFileEl   = $("envFile");
+    const envEditorEl = $("envEditor");
+    const envFileRow  = $("envFileRow");
+    const envEditorPanel = $("envEditorPanel");
+    const inlineCreds = $("inlineCreds");
+
+    function refreshEnvMode() {
+      inlineCreds.classList.add("hidden");
+      envFileRow.classList.add("hidden");
+      envEditorPanel.classList.add("hidden");
+      if (envNoneEl.checked) inlineCreds.classList.remove("hidden");
+      else if (envFileEl.checked) envFileRow.classList.remove("hidden");
+      else if (envEditorEl.checked) envEditorPanel.classList.remove("hidden");
+    }
+    [envNoneEl, envFileEl, envEditorEl].forEach(el => el.addEventListener("change", refreshEnvMode));
+    refreshEnvMode();
+
+    // Env editor actions
+    $("btnValidateEnv").addEventListener("click", () => {
+      const envObj = parseEnv($("envText").value);
+      const missing = [];
+      if (!("USERNAME" in envObj)) missing.push("USERNAME");
+      if (!("PASSWORD" in envObj)) missing.push("PASSWORD");
+      $("envStatus").textContent = missing.length ? `Missing keys: ${missing.join(", ")}` : "Looks good ✔";
+      $("envStatus").style.color = missing.length ? "#d00" : "green";
+    });
+    $("btnDownloadEnv").addEventListener("click", () => {
+      const filename = $("envFilename").value.trim() || "nas.env";
+      download(filename, $("envText").value);
+      $("envStatus").textContent = `Downloaded ${filename}`;
+      $("envStatus").style.color = "green";
+    });
+
+    // Generate command
+    function generateCommand() {
+      const name = $("name").value.trim();
+      const path = $("path").value.trim();
+      const portsCSV = $("ports").value;
+      const restart = $("restart").value;
+      const shareName = $("shareName").value.trim();
+      const readOnly = $("readOnly").checked;
+      const guest = $("guest").checked;
+      const errorEl = $("error");
+      errorEl.textContent = "";
+
+      if (!path) { errorEl.textContent = "Volume path is required."; return; }
+
+      let useEnv = false;
+      let envFilePath = "";
+      let inlineUsername = "";
+      let inlinePassword = "";
+      let inlineUID = "";
+      let inlineGID = "";
+
+      if (envNoneEl.checked) {
+        inlineUsername = $("username").value.trim();
+        inlinePassword = $("password").value.trim();
+        inlineUID = $("uid").value.trim();
+        inlineGID = $("gid").value.trim();
+        if (!inlineUsername || !inlinePassword) {
+          errorEl.textContent = "Username and Password are required (or switch to a .env mode).";
+          return;
+        }
+      } else if (envFileEl.checked) {
+        useEnv = true;
+        envFilePath = $("envPath").value.trim();
+        if (!envFilePath) {
+          errorEl.textContent = "Please provide a path to your external .env file.";
+          return;
+        }
+      } else if (envEditorEl.checked) {
+        useEnv = true;
+        envFilePath = $("envFilename").value.trim() || "./nas.env";
+        const envObj = parseEnv($("envText").value);
+        if (!envObj.USERNAME || !envObj.PASSWORD) {
+          errorEl.textContent = "Your in-app .env must include USERNAME and PASSWORD.";
+          return;
+        }
+      }
+
+      const parts = ["docker run -d"];
+      if (name) parts.push(`--name ${name}`);
+      const portFlags = buildPortFlags(portsCSV, allPortsEl.checked);
+      if (portFlags) parts.push(portFlags);
+      parts.push(`-v ${path}:/data`);
+
+      if (useEnv) {
+        parts.push(`--env-file ${envFilePath}`);
+      } else {
+        parts.push(`-e USERNAME=${inlineUsername}`);
+        parts.push(`-e PASSWORD=${inlinePassword}`);
+        if (inlineUID) parts.push(`-e UID=${inlineUID}`);
+        if (inlineGID) parts.push(`-e GID=${inlineGID}`);
+      }
+
+      parts.push(`--restart ${restart}`);
+      parts.push(`dperson/samba`);
+      if (!useEnv) {
+        parts.push(`-u "${inlineUsername};${inlinePassword}"`);
+      }
+      parts.push(buildShare(shareName, readOnly, guest));
+
+      $("output").textContent = multilineify(parts);
+      $("outputContainer").style.display = "block";
+    }
+
+    function copyCommand() {
+      navigator.clipboard.writeText($("output").textContent).then(() => alert("Command copied!"));
+    }
+  </script>
 </body>
 </html>
