@@ -45,6 +45,18 @@
     .hidden { display: none; }
     textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
 
+    /* Ports grid */
+    .ports-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; }
+    .ports-grid {
+      display:grid;
+      grid-template-columns: 0.7fr 1fr 1fr 1fr; /* expose | container | protocol | host */
+      gap:10px; align-items:center;
+    }
+    .ports-grid .hdr { font-weight:700; font-size:13px; text-align:center; }
+    .ports-cell-center { display:flex; justify-content:center; }
+    .ports-badge { padding:8px 10px; background:#fff; border:1px solid #ddd; border-radius:6px; text-align:center; }
+    .host-input { width:100%; }
+
     /* Shares grid */
     .shares-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; }
     .shares-grid {
@@ -55,8 +67,8 @@
     .shares-grid .hdr { font-weight:700; font-size:13px; text-align:center; }
     .checkcell { display:flex; align-items:center; justify-content:center; gap:8px; }
     .checkcell span { font-weight:600; }
-    .tiny { font-size:12px; }
     .cell-right { display:flex; justify-content:flex-end; align-items:center; }
+    .tiny { font-size:12px; }
 
     /* Users grid */
     .users-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; margin-top:18px; }
@@ -72,15 +84,57 @@
     <label for="name">Container Name</label>
     <input type="text" id="name" value="nas-container"/>
 
-    <!-- Ports -->
-    <div class="inline">
-      <input type="checkbox" id="allPorts"/>
-      <label for="allPorts" style="margin:0; font-weight:600;">Expose all SMB ports (137,138,139,445)</label>
-    </div>
+    <!-- PORTS (container ports are fixed; choose exposure + host bindings) -->
+    <h3 style="margin-top:18px;">Ports</h3>
+    <div class="ports-wrap">
+      <div class="inline">
+        <input type="checkbox" id="allPorts"/>
+        <label for="allPorts" style="margin:0; font-weight:600;">Expose all SMB ports (137/udp, 138/udp, 139/tcp, 445/tcp)</label>
+      </div>
 
-    <label for="ports">Port(s)</label>
-    <input type="text" id="ports" value="445" placeholder="445 or 137,138,139,445"/>
-    <div class="muted">Enter one port (e.g. <code>445</code>) or multiple, comma-separated (e.g. <code>137,138,139,445</code>). Leave empty to expose no ports.</div>
+      <div class="ports-grid" style="margin-top:8px;">
+        <div class="hdr">Expose</div>
+        <div class="hdr">Container Port</div>
+        <div class="hdr">Protocol</div>
+        <div class="hdr">Host Port (bind)</div>
+
+        <!-- 137/udp -->
+        <div class="ports-cell-center">
+          <input type="checkbox" class="p-expose" id="exp-137" data-cport="137" data-proto="udp">
+        </div>
+        <div class="ports-cell-center"><div class="ports-badge">137</div></div>
+        <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
+        <div><input type="number" class="host-input p-host" id="host-137" placeholder="137"></div>
+
+        <!-- 138/udp -->
+        <div class="ports-cell-center">
+          <input type="checkbox" class="p-expose" id="exp-138" data-cport="138" data-proto="udp">
+        </div>
+        <div class="ports-cell-center"><div class="ports-badge">138</div></div>
+        <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
+        <div><input type="number" class="host-input p-host" id="host-138" placeholder="138"></div>
+
+        <!-- 139/tcp -->
+        <div class="ports-cell-center">
+          <input type="checkbox" class="p-expose" id="exp-139" data-cport="139" data-proto="tcp">
+        </div>
+        <div class="ports-cell-center"><div class="ports-badge">139</div></div>
+        <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
+        <div><input type="number" class="host-input p-host" id="host-139" placeholder="139"></div>
+
+        <!-- 445/tcp -->
+        <div class="ports-cell-center">
+          <input type="checkbox" class="p-expose" id="exp-445" data-cport="445" data-proto="tcp" checked>
+        </div>
+        <div class="ports-cell-center"><div class="ports-badge">445</div></div>
+        <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
+        <div><input type="number" class="host-input p-host" id="host-445" placeholder="445" value="445"></div>
+      </div>
+
+      <div class="muted tiny" style="margin-top:8px;">
+        Only the selected rows will be exposed. Host ports may differ from container ports; container ports are fixed.
+      </div>
+    </div>
 
     <!-- Inline global UID/GID (no .env mode) -->
     <div id="inlineCreds">
@@ -156,7 +210,7 @@
       </div>
     </div>
 
-    <!-- USERS (multi-user) -->
+    <!-- USERS -->
     <h3 style="margin-top:18px;">Users (repeatable <code>-u "user;password"</code>)</h3>
     <div id="usersWrap" class="users-wrap">
       <div class="users-grid" style="margin-bottom:6px;">
@@ -171,7 +225,7 @@
       </div>
     </div>
 
-    <!-- MULTI-SHARE / MULTI-PATH SUPPORT -->
+    <!-- SHARES -->
     <h3 style="margin-top:18px;">Shares & Paths (multiple supported)</h3>
     <div class="shares-wrap">
       <div class="shares-grid" style="margin-bottom:6px;">
@@ -207,13 +261,6 @@
 
     /* ---------- Utilities ---------- */
     function trimCSV(str) { return str.split(",").map(s => s.trim()).filter(Boolean); }
-    function buildPortFlags(portsCSV, allPortsChecked) {
-      const text = (portsCSV || "").trim();
-      if (!text) return "";
-      const ports = trimCSV(text);
-      if (ports.length === 1 && !allPortsChecked) return `-p ${ports[0]}:445`;
-      return ports.map(p => `-p ${p}:${p}`).join(" ");
-    }
     function buildShare(flagPath, name, readOnly, guest, allowedUsersCSV) {
       const ro = readOnly ? "yes" : "no";
       const ga = guest ? "yes" : "no";
@@ -237,25 +284,38 @@
       document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },0);
     }
 
-    /* ---------- Ports toggle ---------- */
-    const allPortsEl = $("allPorts"), portsEl = $("ports");
-    allPortsEl.addEventListener("change", () => {
-      if (allPortsEl.checked) {
-        portsEl.placeholder = "137,138,139,445";
-        if (!portsEl.value.trim() || portsEl.value.trim()==="445") portsEl.value = "137,138,139,445";
-      } else {
-        portsEl.placeholder = "445";
-        const vals = trimCSV(portsEl.value);
-        if (vals.length !== 1) portsEl.value = "445";
-      }
-    });
+    /* ---------- Ports (container fixed) ---------- */
+    const allPortsEl = $("allPorts");
+    const portRows = [
+      { exp: $("exp-137"), host: $("host-137"), cport: 137, proto: "udp" },
+      { exp: $("exp-138"), host: $("host-138"), cport: 138, proto: "udp" },
+      { exp: $("exp-139"), host: $("host-139"), cport: 139, proto: "tcp" },
+      { exp: $("exp-445"), host: $("host-445"), cport: 445, proto: "tcp" },
+    ];
+    function syncAllPortsToggle(){
+      const on = allPortsEl.checked;
+      portRows.forEach(r => {
+        r.exp.checked = on;
+        if (on && !r.host.value.trim()) r.host.value = String(r.cport);
+      });
+    }
+    allPortsEl.addEventListener("change", syncAllPortsToggle);
+
+    function buildPortFlagsFixed() {
+      const parts = [];
+      portRows.forEach(r => {
+        if (!r.exp.checked) return;
+        const host = (r.host.value || "").trim() || String(r.cport);
+        parts.push(`-p ${host}:${r.cport}/${r.proto}`);
+      });
+      return parts.join(" ");
+    }
 
     /* ---------- ENV mode ---------- */
     const envNoneEl=$("envNone"), envFileEl=$("envFile"), envEditorEl=$("envEditor");
     const envFileRow=$("envFileRow"), envEditorPanel=$("envEditorPanel");
     const includeUsersFromEnvEl=$("includeUsersFromEnv");
     const usersWrap=$("usersWrap"), usersHint=$("usersHint"), inlineCreds=$("inlineCreds");
-
     function refreshEnvMode(){
       inlineCreds.classList.add("hidden"); envFileRow.classList.add("hidden"); envEditorPanel.classList.add("hidden"); usersWrap.classList.remove("hidden");
       if (envNoneEl.checked){ inlineCreds.classList.remove("hidden"); usersWrap.classList.remove("hidden"); usersHint.textContent='Users are included in the command as -u entries.'; }
@@ -263,10 +323,30 @@
       else if (envEditorEl.checked){ envEditorPanel.classList.remove("hidden"); usersWrap.classList.add("hidden"); }
     }
     [envNoneEl,envFileEl,envEditorEl].forEach(el=>el.addEventListener("change",refreshEnvMode));
-    // Ensure the correct initial visibility
-    document.addEventListener("DOMContentLoaded", refreshEnvMode);
+    document.addEventListener("DOMContentLoaded", ()=>{ refreshEnvMode(); syncAllPortsToggle(); });
 
-    /* ---------- Users (multi-user) ---------- */
+    /* ---------- ENV editor actions (Sync/Apply) ---------- */
+    const envTextEl = $("envText");
+    const envFilenameEl = $("envFilename");
+    $("btnSyncToEnv").addEventListener("click", () => {
+      envTextEl.value = buildEnvFromUI();
+      $("envStatus").textContent = "Synced UI → .env";
+      $("envStatus").style.color = "green";
+    });
+    $("btnApplyFromEnv").addEventListener("click", () => {
+      applyEnvToUI(envTextEl.value);
+      $("envStatus").textContent = "Applied .env → UI";
+      $("envStatus").style.color = "green";
+    });
+    $("btnValidateEnv").addEventListener("click", () => { $("envStatus").textContent="Checked ✔"; $("envStatus").style.color="green"; });
+    $("btnDownloadEnv").addEventListener("click", () => {
+      const filename = envFilenameEl.value.trim() || "nas.env";
+      download(filename, envTextEl.value);
+      $("envStatus").textContent = `Downloaded ${filename}`;
+      $("envStatus").style.color = "green";
+    });
+
+    /* ---------- Users ---------- */
     const usersList=$("usersList"), btnAddUser=$("btnAddUser");
     function userRowTemplate(username="user", password="password"){
       return `
@@ -283,7 +363,7 @@
     function getCurrentUsernames(){ return [...usersList.querySelectorAll(".u-username")].map(i=>i.value.trim()).filter(Boolean); }
     function getCurrentUsers(){ return [...usersList.querySelectorAll(".users-grid")].map(r=>({ username:r.querySelector(".u-username").value.trim(), password:r.querySelector(".u-password").value.trim() })).filter(u=>u.username||u.password); }
 
-    /* ---------- Shares (multi-path) ---------- */
+    /* ---------- Shares ---------- */
     const sharesList=$("sharesList"), btnAddShare=$("btnAddShare");
     function shareRowTemplate(idx, hostPath="/path/to/server", shareName="shared", allowed="", ro=false, guest=false){
       const mountPath=`/data${idx}`;
@@ -316,39 +396,21 @@
     addShareRow("/path/to/server","shared","",false,false);
     btnAddShare.addEventListener("click",()=>addShareRow("","shared","",false,false));
 
-    /* ---------- .env Sync (UI -> .env and .env -> UI) ---------- */
-    const envTextEl = $("envText");
-    const envFilenameEl = $("envFilename");
-    $("btnSyncToEnv").addEventListener("click", () => {
-      envTextEl.value = buildEnvFromUI();
-      $("envStatus").textContent = "Synced UI → .env";
-      $("envStatus").style.color = "green";
-    });
-    $("btnApplyFromEnv").addEventListener("click", () => {
-      applyEnvToUI(envTextEl.value);
-      $("envStatus").textContent = "Applied .env → UI";
-      $("envStatus").style.color = "green";
-    });
-    $("btnValidateEnv").addEventListener("click", () => {
-      // Light validation only
-      try { parseEnv(envTextEl.value); $("envStatus").textContent="Checked ✔"; $("envStatus").style.color="green"; }
-      catch(e){ $("envStatus").textContent="Invalid .env"; $("envStatus").style.color="#d00"; }
-    });
-    $("btnDownloadEnv").addEventListener("click", () => {
-      const filename = envFilenameEl.value.trim() || "nas.env";
-      download(filename, envTextEl.value);
-      $("envStatus").textContent = `Downloaded ${filename}`;
-      $("envStatus").style.color = "green";
-    });
-
+    /* ---------- .env Sync helpers ---------- */
     function buildEnvFromUI() {
       const lines = [];
-      const ports = ($("ports").value || "").trim();
-      if (ports) lines.push(`PORTS=${ports}`);
-      const uid = $("uid").value.trim();
-      const gid = $("gid").value.trim();
-      if (uid) lines.push(`UID=${uid}`);
-      if (gid) lines.push(`GID=${gid}`);
+      // Ports (only host bindings & exposure flags)
+      const selected = portRows.filter(r => r.exp.checked);
+      if (selected.length) {
+        lines.push(`PORTS_SELECTED=${selected.map(r=>`${r.cport}/${r.proto}`).join(",")}`);
+        lines.push(`PORTS_HOST=${selected.map(r=> (r.host.value||r.cport)).join(",")}`);
+      } else {
+        lines.push(`PORTS_SELECTED=`);
+        lines.push(`PORTS_HOST=`);
+      }
+
+      const uid = $("uid").value.trim(); const gid = $("gid").value.trim();
+      if (uid) lines.push(`UID=${uid}`); if (gid) lines.push(`GID=${gid}`);
       lines.push(`RESTART=${$("restart").value}`);
 
       const users = getCurrentUsers().filter(u => u.username && u.password);
@@ -372,8 +434,21 @@
     function applyEnvToUI(text) {
       const env = parseEnv(text);
 
-      // Ports / UID / GID / Restart
-      if (env.PORTS !== undefined) $("ports").value = env.PORTS;
+      // Ports
+      const sel = (env.PORTS_SELECTED||"").split(",").map(s => s.trim()).filter(Boolean);
+      const hosts = (env.PORTS_HOST||"").split(",").map(s => s.trim()).filter(Boolean);
+      const selSet = new Set(sel);
+      portRows.forEach((r, idx) => {
+        const key = `${r.cport}/${r.proto}`;
+        r.exp.checked = selSet.has(key);
+        // host mapping aligned by order of selected keys
+        const pos = sel.indexOf(key);
+        if (pos !== -1 && hosts[pos]) r.host.value = hosts[pos];
+        else if (!r.host.value) r.host.value = r.cport;
+      });
+      allPortsEl.checked = portRows.every(r => r.exp.checked);
+
+      // UID/GID/Restart
       $("uid").value = env.UID || "";
       $("gid").value = env.GID || "";
       if (env.RESTART) $("restart").value = env.RESTART;
@@ -387,18 +462,15 @@
         });
       }
 
-      // Shares (support SHARE_COUNT or infer from keys)
+      // Shares
       sharesList.innerHTML = "";
       let count = 0;
-      if (env.SHARE_COUNT && /^\d+$/.test(env.SHARE_COUNT)) {
-        count = parseInt(env.SHARE_COUNT, 10);
-      } else {
-        // infer by scanning keys
-        Object.keys(env).forEach(k => { const m = k.match(/^SHARE_(\d+)$/); if (m) count = Math.max(count, parseInt(m[1],10)+1); });
-      }
+      if (env.SHARE_COUNT && /^\d+$/.test(env.SHARE_COUNT)) count = parseInt(env.SHARE_COUNT, 10);
+      else Object.keys(env).forEach(k => { const m=k.match(/^SHARE_(\d+)$/); if (m) count=Math.max(count,parseInt(m[1],10)+1); });
+
       for (let i = 0; i < count; i++) {
-        const m = env[`MOUNT_${i}`];   // /host:/dataN
-        const s = env[`SHARE_${i}`];   // name=..;path=/dataN;ro=yes;guest=no;users=...
+        const m = env[`MOUNT_${i}`];
+        const s = env[`SHARE_${i}`];
         if (!m || !s) continue;
         const hostPath = (m.split(":")[0] || "").trim();
         const parts = Object.fromEntries(
@@ -407,20 +479,16 @@
             return [(k||"").trim(), (v||"").trim()];
           })
         );
-        addShareRow(
-          hostPath,
-          parts.name || `share${i}`,
-          parts.users==="all"?"":parts.users,
-          parts.ro==="yes",
-          parts.guest==="yes"
-        );
+        addShareRow(hostPath, parts.name || `share${i}`, parts.users==="all"?"":parts.users, parts.ro==="yes", parts.guest==="yes");
       }
       refreshIndices();
     }
 
-    /* ---------- Command generation ---------- */
+    /* ---------- Generate command ---------- */
     function generateCommand(){
       const name=$("name").value.trim(), restart=$("restart").value, errorEl=$("error"); errorEl.textContent="";
+
+      // Shares
       const rows=[...sharesList.querySelectorAll(".shares-grid")]; if (rows.length===0){ errorEl.textContent="Add at least one share."; return; }
       const shares=[];
       for (const row of rows){
@@ -434,38 +502,77 @@
         if (!shareName){ errorEl.textContent="Every share needs a Share Name."; return; }
         shares.push({hostPath,shareName,allowedUsers,ro,guest,mountPath});
       }
+      // Unique share names
       const seen=new Map(), dups=new Set();
       for (const s of shares){ const key=s.shareName.toLowerCase(); if (seen.has(key)) dups.add(s.shareName); else seen.set(key,true); }
       if (dups.size){ errorEl.textContent=`Share names must be unique. Duplicates found: ${[...dups].join(", ")}`; return; }
 
-      let useEnv=false, envFilePath="", inlineUID=$("uid").value.trim(), inlineGID=$("gid").value.trim();
-      let users=[];
-      if (envNoneEl.checked){
-        users=getCurrentUsers();
+      // ENV / Users
+      const envEditorMode = envEditorEl.checked;
+      let useEnv = envFileEl.checked || envEditorMode;
+      let envFilePath = envFileEl.checked ? $("envPath").value.trim() : (envEditorMode ? $("envFilename").value.trim() || "./nas.env" : "");
+      if (envFileEl.checked && !envFilePath){ errorEl.textContent="Please provide a path to your external .env file."; return; }
+
+      let users = [];
+      if (envNoneEl.checked) {
+        users = getCurrentUsers();
         if (users.length===0){ errorEl.textContent="Add at least one user (or switch to a .env mode)."; return; }
         for (const u of users){ if (!u.username||!u.password){ errorEl.textContent="Each user needs both username and password."; return; } }
-        const nameSet=new Set(users.map(u=>u.username));
-        for (const s of shares){ if (!s.allowedUsers) continue; const missing=trimCSV(s.allowedUsers).filter(n=>!nameSet.has(n)); if (missing.length){ errorEl.textContent=`Share "${s.shareName}" lists unknown user(s): ${missing.join(", ")}.`; return; } }
-      } else if (envFileEl.checked){
-        useEnv=true; envFilePath=$("envPath").value.trim(); if (!envFilePath){ errorEl.textContent="Please provide a path to your external .env file."; return; }
-      } else {
-        useEnv=true; envFilePath=$("envFilename").value.trim()||"./nas.env";
-        if (includeUsersFromEnvEl.checked){
-          const envObj=parseEnv(envTextEl.value);
-          if (envObj.USERS){ users=envObj.USERS.split(",").map(p=>{ const [u,pw]=p.split(":"); return {username:(u||"").trim(), password:(pw||"").trim()}; }).filter(u=>u.username&&u.password); }
-          const nameSet=new Set(users.map(u=>u.username));
-          for (const s of shares){ if (!s.allowedUsers) continue; const missing=trimCSV(s.allowedUsers).filter(n=>!nameSet.has(n)); if (missing.length){ errorEl.textContent=`Share "${s.shareName}" lists unknown user(s): ${missing.join(", ")}.`; return; } }
+      } else if (envEditorMode && $("includeUsersFromEnv").checked) {
+        const envObj = parseEnv($("envText").value);
+        if (envObj.USERS) {
+          users = envObj.USERS.split(",").map(p => {
+            const [u,pw] = p.split(":");
+            return {username:(u||"").trim(), password:(pw||"").trim()};
+          }).filter(u => u.username && u.password);
         }
       }
 
-      const portFlags=buildPortFlags($("ports").value,$("allPorts").checked);
-      const parts=["docker run -d"]; if (name) parts.push(`--name ${name}`); if (portFlags) parts.push(portFlags);
+      // Validate share allowed users against user list (when users are in command)
+      if (!useEnv || (envEditorMode && $("includeUsersFromEnv").checked)) {
+        const nameSet = new Set(users.map(u => u.username));
+        for (const s of shares) {
+          if (!s.allowedUsers) continue;
+          const missing = trimCSV(s.allowedUsers).filter(n => !nameSet.has(n));
+          if (missing.length) { errorEl.textContent = `Share "${s.shareName}" lists unknown user(s): ${missing.join(", ")}.`; return; }
+        }
+      }
+
+      // Build command
+      const parts=["docker run -d"];
+      if (name) parts.push(`--name ${name}`);
+
+      // Ports
+      const portFlags = buildPortFlagsFixed();
+      if (portFlags) parts.push(portFlags);
+
+      // Mounts
       for (let i=0;i<shares.length;i++){ parts.push(`-v ${shares[i].hostPath}:/data${i}`); }
-      if (useEnv) parts.push(`--env-file ${envFilePath}`); else { if (inlineUID) parts.push(`-e UID=${inlineUID}`); if (inlineGID) parts.push(`-e GID=${inlineGID}`); }
-      parts.push(`--restart ${restart}`); parts.push(`dperson/samba`);
-      if (!useEnv || includeUsersFromEnvEl.checked){ for (const u of users) parts.push(`-u "${u.username};${u.password}"`); }
-      for (let i=0;i<shares.length;i++){ const s=shares[i]; parts.push(buildShare(`/data${i}`, s.shareName, s.ro, s.guest, s.allowedUsers)); }
-      $("output").textContent=multilineify(parts); $("outputContainer").style.display="block";
+
+      // Env / UID/GID
+      if (useEnv) parts.push(`--env-file ${envFilePath}`);
+      else {
+        const uid=$("uid").value.trim(), gid=$("gid").value.trim();
+        if (uid) parts.push(`-e UID=${uid}`);
+        if (gid) parts.push(`-e GID=${gid}`);
+      }
+
+      parts.push(`--restart ${restart}`);
+      parts.push(`dperson/samba`);
+
+      // Users in command?
+      if (!useEnv || (envEditorMode && $("includeUsersFromEnv").checked)) {
+        for (const u of users) parts.push(`-u "${u.username};${u.password}"`);
+      }
+
+      // Shares
+      for (let i=0;i<shares.length;i++){
+        const s=shares[i];
+        parts.push(buildShare(`/data${i}`, s.shareName, s.ro, s.guest, s.allowedUsers));
+      }
+
+      $("output").textContent = multilineify(parts);
+      $("outputContainer").style.display = "block";
     }
 
     function copyCommand(){ navigator.clipboard.writeText($("output").textContent).then(()=>alert("Command copied!")); }
