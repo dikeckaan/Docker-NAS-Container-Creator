@@ -132,8 +132,19 @@
       </div>
 
       <div class="muted tiny" style="margin-top:8px;">
-        Only the selected rows will be exposed. Host ports may differ from container ports; container ports are fixed.
+        Only the selected rows will be exposed. Host ports may differ from container ports; container ports are fixed. Tip: if you do not enable NetBIOS (-n), exposing only 139/tcp and 445/tcp is sufficient.
       </div>
+          <div class="inline" style="margin-top:12px; gap:16px;">
+        <label class="inline" style="margin:0;">
+          <input type="checkbox" id="smbPermFix" checked>
+          <span class="tiny">Fix permissions (-p)</span>
+        </label>
+        <label class="inline" style="margin:0;">
+          <input type="checkbox" id="smbNmbd">
+          <span class="tiny">Enable NetBIOS discovery (-n)</span>
+        </label>
+      </div>
+      <div class="muted tiny">If you enable NetBIOS (-n) without host networking, also expose 137/udp and 138/udp above.</div>
     </div>
 
     <!-- Inline global UID/GID (no .env mode) -->
@@ -247,7 +258,7 @@
     </div>
 
     <div id="error" class="error"></div>
-    <button onclick="generateCommand()">Generate Docker Command</button>
+    <div class="inline" style="justify-content:space-between;"><label class="inline" style="margin:0;"><input type="checkbox" id="singleLineOut" checked><span class="tiny">Output as single line (avoids shell copy issues)</span></label><button onclick="generateCommand()">Generate Docker Command</button></div>
 
     <div id="outputContainer" class="output-container">
       <h3>Generated Command:</h3>
@@ -262,11 +273,12 @@
     /* ---------- Utilities ---------- */
     function trimCSV(str) { return str.split(",").map(s => s.trim()).filter(Boolean); }
     function buildShare(flagPath, name, readOnly, guest, allowedUsersCSV) {
-      const ro = readOnly ? "yes" : "no";
-      const ga = guest ? "yes" : "no";
-      const usersField = (allowedUsersCSV || "").trim() ? trimCSV(allowedUsersCSV).join(",") : "all";
-      return `-s "${name};${flagPath};${ro};${ga};no;${usersField};none"`;
-    }
+  const browse = "yes";
+  const ro = readOnly ? "yes" : "no";
+  const ga = guest ? "yes" : "no";
+  const usersField = (allowedUsersCSV || "").trim() ? trimCSV(allowedUsersCSV).join(",") : "all";
+  return `-s "${name};${flagPath};${browse};${ro};${ga};${usersField};none"`;
+}
     function multilineify(parts) { return parts.map((p,i)=> i===0?p:("  "+p)).join(" \\\n"); }
     function parseEnv(text) {
       const lines = text.split(/\r?\n/), out = {};
@@ -301,6 +313,18 @@
     }
     allPortsEl.addEventListener("change", syncAllPortsToggle);
 
+    // Ensure 137/138 are exposed when NetBIOS (-n) is enabled
+    const smbNmbdEl = document.getElementById("smbNmbd");
+    function ensureNetbiosPorts(){
+      if (!smbNmbdEl) return;
+      if (smbNmbdEl.checked){
+        const p137 = portRows.find(r => r.cport===137 && r.proto==="udp");
+        const p138 = portRows.find(r => r.cport===138 && r.proto==="udp");
+        [p137,p138].forEach(r=>{ if(!r) return; r.exp.checked = true; if(!r.host.value.trim()) r.host.value=String(r.cport); });
+      }
+    }
+    if (smbNmbdEl) smbNmbdEl.addEventListener("change", ensureNetbiosPorts);
+
     function buildPortFlagsFixed() {
       const parts = [];
       portRows.forEach(r => {
@@ -323,7 +347,7 @@
       else if (envEditorEl.checked){ envEditorPanel.classList.remove("hidden"); usersWrap.classList.add("hidden"); }
     }
     [envNoneEl,envFileEl,envEditorEl].forEach(el=>el.addEventListener("change",refreshEnvMode));
-    document.addEventListener("DOMContentLoaded", ()=>{ refreshEnvMode(); syncAllPortsToggle(); });
+    document.addEventListener("DOMContentLoaded", ()=>{ refreshEnvMode(); syncAllPortsToggle(); ensureNetbiosPorts(); });
 
     /* ---------- ENV editor actions (Sync/Apply) ---------- */
     const envTextEl = $("envText");
@@ -410,7 +434,8 @@
       }
 
       const uid = $("uid").value.trim(); const gid = $("gid").value.trim();
-      if (uid) lines.push(`UID=${uid}`); if (gid) lines.push(`GID=${gid}`);
+      if (uid) lines.push(`USERID=${uid}`);
+      if (gid) lines.push(`GROUPID=${gid}`);
       lines.push(`RESTART=${$("restart").value}`);
 
       const users = getCurrentUsers().filter(u => u.username && u.password);
@@ -449,8 +474,8 @@
       allPortsEl.checked = portRows.every(r => r.exp.checked);
 
       // UID/GID/Restart
-      $("uid").value = env.UID || "";
-      $("gid").value = env.GID || "";
+      $("uid").value = env.USERID || "";
+      $("gid").value = env.GROUPID || "";
       if (env.RESTART) $("restart").value = env.RESTART;
 
       // Users
@@ -553,12 +578,15 @@
       if (useEnv) parts.push(`--env-file ${envFilePath}`);
       else {
         const uid=$("uid").value.trim(), gid=$("gid").value.trim();
-        if (uid) parts.push(`-e UID=${uid}`);
-        if (gid) parts.push(`-e GID=${gid}`);
+        if (uid) parts.push(`-e USERID=${uid}`);
+        if (gid) parts.push(`-e GROUPID=${gid}`);
       }
 
       parts.push(`--restart ${restart}`);
       parts.push(`dperson/samba`);
+      // Samba feature toggles
+      if (document.getElementById("smbNmbd").checked) parts.push("-n");
+      if (document.getElementById("smbPermFix").checked) parts.push("-p");
 
       // Users in command?
       if (!useEnv || (envEditorMode && $("includeUsersFromEnv").checked)) {
@@ -571,8 +599,9 @@
         parts.push(buildShare(`/data${i}`, s.shareName, s.ro, s.guest, s.allowedUsers));
       }
 
-      $("output").textContent = multilineify(parts);
-      $("outputContainer").style.display = "block";
+      const singleLine = document.getElementById("singleLineOut") && document.getElementById("singleLineOut").checked;
+$("output").textContent = singleLine ? parts.join(" ") : multilineify(parts);
+$("outputContainer").style.display = "block";
     }
 
     function copyCommand(){ navigator.clipboard.writeText($("output").textContent).then(()=>alert("Command copied!")); }
