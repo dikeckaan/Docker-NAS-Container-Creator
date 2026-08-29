@@ -1,18 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="24" fill="#007bff"/>
-  <g fill="#ffffff">
-    <rect x="24" y="28" width="80" height="20" rx="5"/>
-    <rect x="24" y="54" width="80" height="20" rx="5"/>
-    <rect x="24" y="80" width="80" height="20" rx="5"/>
-  </g>
-  <g fill="#007bff">
-    <circle cx="34" cy="38" r="4"/>
-    <circle cx="34" cy="64" r="4"/>
-    <circle cx="34" cy="90" r="4"/>
-  </g>
-  <g fill="#66b2ff">
-    <rect x="70" y="34" width="26" height="8" rx="3"/>
-    <rect x="70" y="60" width="26" height="8" rx="3"/>
-    <rect x="70" y="86" width="26" height="8" rx="3"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><rect width="128" height="128" fill="#007bff" rx="24"/><g fill="#fff"><rect width="80" height="20" x="24" y="28" rx="5"/><rect width="80" height="20" x="24" y="54" rx="5"/><rect width="80" height="20" x="24" y="80" rx="5"/></g><g fill="#007bff"><circle cx="34" cy="38" r="4"/><circle cx="34" cy="64" r="4"/><circle cx="34" cy="90" r="4"/></g><g fill="#66b2ff"><rect width="26" height="8" x="70" y="34" rx="3"/><rect width="26" height="8" x="70" y="60" rx="3"/><rect width="26" height="8" x="70" y="86" rx="3"/></g></svg>
