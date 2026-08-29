@@ -1,87 +1,58 @@
 # Improvement Roadmap
 
-A prioritized list of suggested improvements for Docker NAS Container Creator, based on a review of the current code (`index.html`).
+Status of the improvements identified for Docker NAS Container Creator.
+**Everything below has been implemented** (a few stretch items in a pragmatic first version — noted inline).
 
 ## 1. High priority — correctness & security
 
-### 1.1 Shell escaping for user input
-Usernames, passwords, share names and paths are inserted into the generated command without any escaping. A password containing `"`, `;`, `$`, a space or a backtick produces a broken (or dangerous) shell command. Escape all values (e.g. wrap in single quotes and escape embedded single quotes) before building `-u`, `-s`, `-v`, `--name` flags.
-
-### 1.2 Safe DOM construction instead of `innerHTML` templates
-`userRowTemplate` / `shareRowTemplate` interpolate raw values into HTML strings. A value containing `"` or `<` breaks the row markup (and is an XSS vector when applying an imported `.env`). Build rows with `createElement`/`value =` assignments instead.
-
-### 1.3 Warn about the unmaintained base image
-`dperson/samba` has not been updated for years. Either:
-- switch the default to a maintained image (e.g. `ghcr.io/servercontainers/samba`), keeping `dperson/samba` as a selectable legacy option, or
-- at minimum show a notice with the trade-offs.
-An image selector would also allow adapting the flag syntax per image.
-
-### 1.4 Plaintext password warning
-In "No .env" mode passwords end up in shell history and `docker inspect`. Show a visible warning and recommend the `.env` modes for anything beyond testing.
-
-### 1.5 Real `.env` validation
-The "Validate .env" button currently always reports success. Implement actual checks: known keys, `USERS` format, `SHARE_n`/`MOUNT_n` consistency with `SHARE_COUNT`, numeric UID/GID, valid restart policy, port ranges.
-
-### 1.6 Input validation
-- Host ports: integer 1–65535, warn on duplicates across rows.
-- Host path: warn when not absolute (`/…`), since relative bind mounts behave differently.
-- Share name: restrict to characters Samba accepts; warn on spaces.
-- Username: basic charset validation.
+- [x] **Shell escaping for user input** — every value goes through `shellEscape()` in `js/command-builder.js`; covered by unit tests.
+- [x] **Safe DOM construction instead of `innerHTML` templates** — user/share rows are built with `createElement` in `js/app.js`.
+- [x] **Warn about the unmaintained base image** — image selector (`dperson/samba` / `ghcr.io/servercontainers/samba`) with a visible warning callout; the maintained image is generated via its env-var config.
+- [x] **Plaintext password warning** — a warning callout is shown in "No .env" mode; also emitted as a note next to the output.
+- [x] **Real `.env` validation** — `validateEnvText()` checks keys, `USERS` format, `SHARE_n`/`MOUNT_n` vs `SHARE_COUNT`, numeric UID/GID, restart policy, port lists.
+- [x] **Input validation** — host port range and duplicates, absolute-path warning, share-name charset/`;` checks, username charset, weak-password hints.
 
 ## 2. High value — new features
 
-### 2.1 Docker Compose output
-Generate a `docker-compose.yml` alongside the `docker run` command (tabbed output: *docker run* / *compose*). Compose is what most NAS users actually deploy with, pairs naturally with the existing `.env` support, and is easy to derive from the same internal model. A "Download compose file" button completes it.
-
-### 2.2 Save/load configurations
-- Persist the current form to `localStorage` (auto-restore on load).
-- Named profiles (e.g. "home NAS", "media box").
-- Shareable links: serialize the config (minus passwords) into the URL hash.
-
-### 2.3 Network mode selector
-Add `bridge` (current) / `host` / `macvlan` options. `host` networking is the common fix for SMB discovery issues; `macvlan` gives the container its own LAN IP. Hide the port grid when it does not apply.
-
-### 2.4 Windows discovery (WSDD)
-NetBIOS (`-n`) only helps legacy clients; modern Windows uses WS-Discovery. Offer a "Windows network discovery" toggle that adds a companion `wsdd` container (or documents it), so shares appear in Windows Explorer.
-
-### 2.5 More Samba options
-- `-w WORKGROUP` (workgroup name)
-- `-e TZ=…` (timezone)
-- `-r` (recycle bin), veto files
-- `-g` global smb.conf options (advanced free-text)
-- SMB protocol min version toggle (disable SMB1)
-
-### 2.6 Password tooling
-Generate-random-password button, show/hide toggle per password field, simple strength hint.
-
-### 2.7 Import an existing command
-Paste a `docker run … dperson/samba …` command and populate the form from it — makes the tool useful for editing existing setups, not only creating new ones.
-
-### 2.8 Presets
-One-click starting points: "Single public guest share", "Family multi-user", "Read-only media share", "Time Machine backup target".
+- [x] **Docker Compose output** — tabbed output (`docker run` / compose / systemd unit) with a "Download docker-compose.yml" button.
+- [x] **Save/load configurations** — autosave to `localStorage`, named profiles, and a shareable URL (passwords stripped).
+- [x] **Network mode selector** — bridge / host / macvlan (network name + optional static IP); port grid hidden when not applicable.
+- [x] **Windows discovery (WSDD)** — toggle adds a companion `wsdd` container (host network) for `dperson/samba`; notes that `servercontainers/samba` ships avahi + wsdd2 built in.
+- [x] **More Samba options** — workgroup (`-w`), timezone (`TZ`), recycle-bin toggle (`-r`), free-form global options (`-g`, one per line — also how SMB1/SMB-min-version can be set).
+- [x] **Password tooling** — per-user generate button, show/hide toggle, strength hint.
+- [x] **Import an existing command** — paste a `dperson/samba` `docker run` command; tokenizer handles quotes, `--flag=value` and line continuations.
+- [x] **Presets** — public guest share, family multi-user, read-only media, Time Machine target (fruit global options).
 
 ## 3. UX & polish
 
-- **Dark mode** (respect `prefers-color-scheme`, plus a manual toggle).
-- **i18n**: English/Turkish language switch; strings are few enough to keep in a small dictionary.
-- **Mobile layout**: the ports/shares/users grids overflow on narrow screens; collapse to stacked cards under ~700px.
-- **Accessibility**: associate every input with a `<label>`/`aria-label`, keyboard focus states, `aria-live` for the error/status areas.
-- **Copy feedback** without `alert()` (inline "Copied ✔" that fades).
-- **Explain flags**: tooltip/help icon per option describing the underlying Samba/Docker flag.
+- [x] **Dark mode** — follows `prefers-color-scheme`, manual toggle persisted.
+- [x] **i18n** — English/Turkish dictionary (`js/i18n.js`), including translated validation messages.
+- [x] **Mobile layout** — grids collapse to stacked cards under 700px.
+- [x] **Accessibility** — labels/aria-labels on all inputs and icon buttons, `aria-live` status areas, focus styles, real tab semantics on the output switcher.
+- [x] **Copy feedback without `alert()`** — inline "Copied ✔" status that fades.
+- [x] **Explain flags** — help text/notes per option; contextual notes rendered under the output.
 
 ## 4. Project & repo hygiene
 
-- **Split the single file** into `index.html` + `css/style.css` + `js/app.js` (still buildless, still GitHub Pages friendly).
-- **Tests**: the command generator is pure logic — extract `buildCommand(state)` and unit-test it (Node + a tiny test runner or Vitest); add a Playwright smoke test for the form.
-- **CI**: GitHub Action running the tests + `html-validate`/ESLint on PRs (the repo currently only has the Pages deploy workflow).
-- **README**: add the live demo link (GitHub Pages URL), screenshots, a usage example, generated-command sample, supported options table, badges, and a Turkish section.
-- **Meta**: favicon, Open Graph tags, `description` meta for link previews.
-- **PWA**: a small manifest + service worker makes the tool installable/offline-capable — a good fit for a zero-backend page.
-- **Contributing/License notes**: short CONTRIBUTING.md; the LICENSE file already exists — reference it in the README.
+- [x] **Split the single file** — `index.html` + `css/style.css` + `js/command-builder.js` + `js/i18n.js` + `js/app.js`; still buildless.
+- [x] **Tests** — pure `buildOutputs(state)` builder with a `node --test` suite (`tests/`), plus a Playwright smoke script used during development.
+- [x] **CI** — `.github/workflows/ci.yml` runs unit tests and `html-validate` on every push/PR.
+- [x] **README** — live demo link, screenshots (light/dark), features, example outputs, badges, Turkish section.
+- [x] **Meta** — SVG favicon, Open Graph tags, description meta, theme-color.
+- [x] **PWA** — `manifest.webmanifest` + `sw.js` (cache-first app shell) + icons; installable and offline-capable.
+- [x] **Contributing/License notes** — `CONTRIBUTING.md` added; LICENSE referenced from the README.
 
 ## 5. Stretch ideas
 
-- **Multi-protocol NAS**: extend beyond SMB — NFS (`erichough/nfs-server`), WebDAV, FTP — behind a "protocol" selector sharing the same shares/users model.
-- **Portainer/systemd output**: additional output tabs (Portainer stack, systemd unit with `docker run`).
-- **Config diff**: show what changed in the command as the user edits the form (live preview instead of a Generate button).
-- **Healthcheck & resource limits**: optional `--health-cmd`, `--memory`, `--cpus` fields.
+- [x] **Multi-protocol NAS** — protocol selector with basic NFS (`erichough/nfs-server`), WebDAV (`bytemark/webdav`) and FTP (`delfer/alpine-ftp-server`) generation sharing the same shares/users model. *(First version: sensible defaults with per-protocol notes; SMB remains the most complete.)*
+- [x] **Portainer/systemd output** — systemd unit tab with download; the compose output is paste-able into a Portainer stack (noted in the UI).
+- [x] **Config diff / live preview** — the output regenerates on every edit; no Generate button needed.
+- [x] **Healthcheck & resource limits** — optional smbclient healthcheck, `--memory`, `--cpus` fields (also emitted in compose).
+
+## Future ideas (next round)
+
+- Per-protocol port editing for NFS/WebDAV/FTP (currently sensible fixed defaults).
+- Import support for compose files and for the `servercontainers/samba` env format.
+- Playwright E2E suite in CI (the smoke script exists; wiring it into CI needs a browser cache step).
+- More presets (Time Machine on `servercontainers/samba`, scanner drop-box, camera backup).
+- Optional password hashing / secrets-file output instead of plaintext env values.
