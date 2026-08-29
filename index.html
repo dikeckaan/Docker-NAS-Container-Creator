@@ -3,608 +3,386 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Generate ready-to-run Docker commands and compose files for SMB, NFS, WebDAV and FTP NAS containers — entirely in your browser."/>
+  <meta name="theme-color" content="#007bff"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Docker NAS Container Creator"/>
+  <meta property="og:description" content="Generate ready-to-run Docker commands and compose files for SMB, NFS, WebDAV and FTP NAS containers — entirely in your browser."/>
+  <meta property="og:url" content="https://dikeckaan.github.io/Docker-NAS-Container-Creator/"/>
+  <meta property="og:image" content="https://dikeckaan.github.io/Docker-NAS-Container-Creator/docs/screenshot-light.png"/>
   <title>Docker NAS Container Creator</title>
-  <style>
-    :root{
-      --btn-pad:8px 12px;
-      --btn-font:12px;
-      --radius:6px;
-      --icon-w:44px;
-      --icon-h:36px;
-    }
-    body { font-family: Arial, sans-serif; background:#f9f9f9; margin:0; padding:20px; }
-    .container { max-width: 1000px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h1 { text-align: center; margin-top: 0; }
-    label { font-weight: bold; display: block; margin: 12px 0 6px; }
-    input, select, button, textarea {
-      width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;
-    }
-    input[type="checkbox"], input[type="radio"] { width: auto; margin-right: 8px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .muted { font-size: 12px; color: #666; margin-top: 4px; }
-    .inline { display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap: wrap; }
-    .env-block { border: 1px dashed #ccc; border-radius: var(--radius); padding: 12px; background: #fafafa; }
-
-    /* Buttons */
-    button { background:#007bff; color:#fff; border:none; margin-top:15px; cursor:pointer; }
-    button:hover { background:#0056b3; }
-    .secondary { background:#6c757d; }
-    .secondary:hover { background:#545b62; }
-    .success { background:#28a745; }
-    .success:hover { background:#218838; }
-    .danger { background:#dc3545; }
-    .danger:hover { background:#b02a37; }
-    .btn-small{ padding: var(--btn-pad); font-size: var(--btn-font); border-radius: var(--radius); }
-    .btn-block{ width:100%; }
-    .gridbtn { margin-top: 0; }
-    .btn-icon { width: var(--icon-w); height: var(--icon-h); padding:0; line-height: var(--icon-h); text-align:center; }
-
-    .error { color: #d00; margin: 10px 0; }
-    .output-container { margin-top: 20px; display: none; }
-    .output { background: #f1f1f1; padding: 12px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; }
-    .hidden { display: none; }
-    textarea { min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-
-    /* Ports grid */
-    .ports-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; }
-    .ports-grid {
-      display:grid;
-      grid-template-columns: 0.7fr 1fr 1fr 1fr; /* expose | container | protocol | host */
-      gap:10px; align-items:center;
-    }
-    .ports-grid .hdr { font-weight:700; font-size:13px; text-align:center; }
-    .ports-cell-center { display:flex; justify-content:center; }
-    .ports-badge { padding:8px 10px; background:#fff; border:1px solid #ddd; border-radius:6px; text-align:center; }
-    .host-input { width:100%; }
-
-    /* Shares grid */
-    .shares-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; }
-    .shares-grid {
-      display:grid;
-      grid-template-columns: 2.0fr 1.2fr 1.6fr auto 0.7fr 0.7fr auto;
-      gap:10px; align-items:center;
-    }
-    .shares-grid .hdr { font-weight:700; font-size:13px; text-align:center; }
-    .checkcell { display:flex; align-items:center; justify-content:center; gap:8px; }
-    .checkcell span { font-weight:600; }
-    .cell-right { display:flex; justify-content:flex-end; align-items:center; }
-    .tiny { font-size:12px; }
-
-    /* Users grid */
-    .users-wrap { border:1px solid #e5e5e5; border-radius:8px; padding:12px; background:#fafafa; margin-top:18px; }
-    .users-grid { display:grid; grid-template-columns: 1fr 1fr auto; gap:10px; align-items:center; }
-    .users-grid .hdr { font-weight:700; font-size:13px; text-align:center; }
-    .cell-actions { display:flex; justify-content:flex-end; align-items:center; }
-  </style>
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
   <div class="container">
-    <h1>Docker NAS Container Creator</h1>
+    <h1 data-i18n="app.title">Docker NAS Container Creator</h1>
+    <p class="tagline" data-i18n="app.tagline"></p>
 
-    <label for="name">Container Name</label>
+    <!-- Toolbar: presets, profiles, share link, import, language, theme -->
+    <div class="toolbar">
+      <select id="presetSelect" aria-label="Preset">
+        <option value="" data-i18n="preset.custom"></option>
+        <option value="publicGuest" data-i18n="preset.publicGuest"></option>
+        <option value="family" data-i18n="preset.family"></option>
+        <option value="mediaRo" data-i18n="preset.mediaRo"></option>
+        <option value="timeMachine" data-i18n="preset.timeMachine"></option>
+      </select>
+      <select id="profileSelect" aria-label="Profiles">
+        <option value="" data-i18n="profiles.none"></option>
+      </select>
+      <input type="text" id="profileName" data-i18n-ph="profiles.placeholder" aria-label="Profile name"/>
+      <button type="button" id="btnProfileSave" class="secondary btn-small gridbtn" data-i18n="profiles.save"></button>
+      <button type="button" id="btnProfileDelete" class="danger btn-small gridbtn" data-i18n="profiles.delete"></button>
+      <span id="toolbarStatus" class="status" aria-live="polite"></span>
+      <span class="spacer"></span>
+      <button type="button" id="btnShareLink" class="secondary btn-small gridbtn" data-i18n="toolbar.shareLink"></button>
+      <button type="button" id="btnImportToggle" class="secondary btn-small gridbtn" data-i18n="toolbar.import"></button>
+      <button type="button" id="btnReset" class="secondary btn-small gridbtn" data-i18n="toolbar.reset"></button>
+      <select id="langSelect" data-i18n-title="lang.label">
+        <option value="en">EN</option>
+        <option value="tr">TR</option>
+      </select>
+      <button type="button" id="themeToggle" class="secondary btn-small gridbtn" data-i18n-title="theme.toggle">🌓</button>
+    </div>
+
+    <!-- Import panel -->
+    <div id="importPanel" class="wrap-box hidden">
+      <label for="importText" data-i18n="import.title"></label>
+      <div class="muted tiny" data-i18n="import.hint"></div>
+      <textarea id="importText" spellcheck="false"></textarea>
+      <div class="inline">
+        <button type="button" id="btnImportParse" class="btn-small btn-auto gridbtn" data-i18n="import.parse"></button>
+        <span id="importStatus" class="status" aria-live="polite"></span>
+      </div>
+      <ul id="importIssues" class="issues"></ul>
+    </div>
+
+    <!-- Protocol & image -->
+    <div class="row">
+      <div>
+        <label for="protocol" data-i18n="proto.label"></label>
+        <select id="protocol">
+          <option value="smb" data-i18n="proto.smb"></option>
+          <option value="nfs" data-i18n="proto.nfs"></option>
+          <option value="webdav" data-i18n="proto.webdav"></option>
+          <option value="ftp" data-i18n="proto.ftp"></option>
+        </select>
+      </div>
+      <div id="imageBlock">
+        <label for="smbImage" data-i18n="image.label"></label>
+        <select id="smbImage">
+          <option value="dperson" data-i18n="image.dperson"></option>
+          <option value="servercontainers" data-i18n="image.sc"></option>
+        </select>
+      </div>
+    </div>
+    <div id="imageWarn" class="callout-warn" data-i18n="image.warn"></div>
+    <div id="scNote" class="callout-note hidden" data-i18n="smb.scNote"></div>
+    <div id="protoPortNote" class="callout-note hidden"></div>
+
+    <label for="name" data-i18n="name.label"></label>
     <input type="text" id="name" value="nas-container"/>
 
-    <!-- PORTS (container ports are fixed; choose exposure + host bindings) -->
-    <h3 style="margin-top:18px;">Ports</h3>
-    <div class="ports-wrap">
-      <div class="inline">
-        <input type="checkbox" id="allPorts"/>
-        <label for="allPorts" style="margin:0; font-weight:600;">Expose all SMB ports (137/udp, 138/udp, 139/tcp, 445/tcp)</label>
+    <!-- Network -->
+    <div class="row">
+      <div>
+        <label for="networkMode" data-i18n="net.label"></label>
+        <select id="networkMode">
+          <option value="bridge" data-i18n="net.bridge"></option>
+          <option value="host" data-i18n="net.host"></option>
+          <option value="macvlan" data-i18n="net.macvlan"></option>
+        </select>
       </div>
-
-      <div class="ports-grid" style="margin-top:8px;">
-        <div class="hdr">Expose</div>
-        <div class="hdr">Container Port</div>
-        <div class="hdr">Protocol</div>
-        <div class="hdr">Host Port (bind)</div>
-
-        <!-- 137/udp -->
-        <div class="ports-cell-center">
-          <input type="checkbox" class="p-expose" id="exp-137" data-cport="137" data-proto="udp">
-        </div>
-        <div class="ports-cell-center"><div class="ports-badge">137</div></div>
-        <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
-        <div><input type="number" class="host-input p-host" id="host-137" placeholder="137"></div>
-
-        <!-- 138/udp -->
-        <div class="ports-cell-center">
-          <input type="checkbox" class="p-expose" id="exp-138" data-cport="138" data-proto="udp">
-        </div>
-        <div class="ports-cell-center"><div class="ports-badge">138</div></div>
-        <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
-        <div><input type="number" class="host-input p-host" id="host-138" placeholder="138"></div>
-
-        <!-- 139/tcp -->
-        <div class="ports-cell-center">
-          <input type="checkbox" class="p-expose" id="exp-139" data-cport="139" data-proto="tcp">
-        </div>
-        <div class="ports-cell-center"><div class="ports-badge">139</div></div>
-        <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
-        <div><input type="number" class="host-input p-host" id="host-139" placeholder="139"></div>
-
-        <!-- 445/tcp -->
-        <div class="ports-cell-center">
-          <input type="checkbox" class="p-expose" id="exp-445" data-cport="445" data-proto="tcp" checked>
-        </div>
-        <div class="ports-cell-center"><div class="ports-badge">445</div></div>
-        <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
-        <div><input type="number" class="host-input p-host" id="host-445" placeholder="445" value="445"></div>
+      <div id="webdavPortBlock" class="hidden">
+        <label for="webdavPort" data-i18n="webdav.port"></label>
+        <input type="number" id="webdavPort" value="8080" min="1" max="65535"/>
       </div>
+    </div>
+    <div id="macvlanRow" class="row hidden">
+      <div>
+        <label for="macvlanNetwork" data-i18n="net.macvlanNet"></label>
+        <input type="text" id="macvlanNetwork" placeholder="lan"/>
+      </div>
+      <div>
+        <label for="macvlanIp" data-i18n="net.macvlanIp"></label>
+        <input type="text" id="macvlanIp" placeholder="192.168.1.50"/>
+      </div>
+    </div>
+    <div id="hostNetNote" class="callout-note hidden" data-i18n="net.hostNote"></div>
 
-      <div class="muted tiny" style="margin-top:8px;">
-        Only the selected rows will be exposed. Host ports may differ from container ports; container ports are fixed. Tip: if you do not enable NetBIOS (-n), exposing only 139/tcp and 445/tcp is sufficient.
+    <!-- PORTS (SMB, bridge mode) -->
+    <div id="portsSection">
+      <h3 data-i18n="ports.title"></h3>
+      <div class="wrap-box">
+        <div class="inline">
+          <input type="checkbox" id="allPorts"/>
+          <label for="allPorts" style="margin:0; font-weight:600;" data-i18n="ports.all"></label>
+        </div>
+
+        <div class="ports-grid" style="margin-top:8px;">
+          <div class="hdr" data-i18n="ports.expose"></div>
+          <div class="hdr" data-i18n="ports.cport"></div>
+          <div class="hdr" data-i18n="ports.proto"></div>
+          <div class="hdr" data-i18n="ports.host"></div>
+
+          <div class="ports-cell-center">
+            <input type="checkbox" class="p-expose" id="exp-137" data-cport="137" data-proto="udp" aria-label="Expose 137/udp">
+          </div>
+          <div class="ports-cell-center"><div class="ports-badge">137</div></div>
+          <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
+          <div><input type="number" class="host-input p-host" id="host-137" placeholder="137" min="1" max="65535" aria-label="Host port for 137/udp"></div>
+
+          <div class="ports-cell-center">
+            <input type="checkbox" class="p-expose" id="exp-138" data-cport="138" data-proto="udp" aria-label="Expose 138/udp">
+          </div>
+          <div class="ports-cell-center"><div class="ports-badge">138</div></div>
+          <div class="ports-cell-center"><div class="ports-badge">udp</div></div>
+          <div><input type="number" class="host-input p-host" id="host-138" placeholder="138" min="1" max="65535" aria-label="Host port for 138/udp"></div>
+
+          <div class="ports-cell-center">
+            <input type="checkbox" class="p-expose" id="exp-139" data-cport="139" data-proto="tcp" aria-label="Expose 139/tcp">
+          </div>
+          <div class="ports-cell-center"><div class="ports-badge">139</div></div>
+          <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
+          <div><input type="number" class="host-input p-host" id="host-139" placeholder="139" min="1" max="65535" aria-label="Host port for 139/tcp"></div>
+
+          <div class="ports-cell-center">
+            <input type="checkbox" class="p-expose" id="exp-445" data-cport="445" data-proto="tcp" checked aria-label="Expose 445/tcp">
+          </div>
+          <div class="ports-cell-center"><div class="ports-badge">445</div></div>
+          <div class="ports-cell-center"><div class="ports-badge">tcp</div></div>
+          <div><input type="number" class="host-input p-host" id="host-445" placeholder="445" value="445" min="1" max="65535" aria-label="Host port for 445/tcp"></div>
+        </div>
+
+        <div class="muted tiny" style="margin-top:8px;" data-i18n="ports.tip"></div>
+        <div id="dpersonPortToggles" class="inline" style="margin-top:12px; gap:16px;">
+          <label class="inline" style="margin:0;">
+            <input type="checkbox" id="smbPermFix" checked>
+            <span class="tiny" data-i18n="ports.permfix"></span>
+          </label>
+          <label class="inline" style="margin:0;">
+            <input type="checkbox" id="smbNmbd">
+            <span class="tiny" data-i18n="ports.nmbd"></span>
+          </label>
+        </div>
+        <div class="muted tiny" id="netbiosNote" data-i18n="ports.netbiosNote"></div>
       </div>
-          <div class="inline" style="margin-top:12px; gap:16px;">
-        <label class="inline" style="margin:0;">
-          <input type="checkbox" id="smbPermFix" checked>
-          <span class="tiny">Fix permissions (-p)</span>
-        </label>
-        <label class="inline" style="margin:0;">
-          <input type="checkbox" id="smbNmbd">
-          <span class="tiny">Enable NetBIOS discovery (-n)</span>
-        </label>
-      </div>
-      <div class="muted tiny">If you enable NetBIOS (-n) without host networking, also expose 137/udp and 138/udp above.</div>
     </div>
 
-    <!-- Inline global UID/GID (no .env mode) -->
+    <!-- UID/GID/TZ/Workgroup -->
     <div id="inlineCreds">
-      <div class="row">
+      <div class="row-4">
         <div>
-          <label for="uid">User ID (UID)</label>
-          <input type="number" id="uid" value="1000"/>
+          <label for="uid" data-i18n="ids.uid"></label>
+          <input type="number" id="uid" value="1000" min="0"/>
         </div>
         <div>
-          <label for="gid">Group ID (GID)</label>
-          <input type="number" id="gid" value="1000"/>
+          <label for="gid" data-i18n="ids.gid"></label>
+          <input type="number" id="gid" value="1000" min="0"/>
+        </div>
+        <div>
+          <label for="tz" data-i18n="ids.tz"></label>
+          <input type="text" id="tz" placeholder="Europe/Istanbul"/>
+        </div>
+        <div id="workgroupBlock">
+          <label for="workgroup" data-i18n="ids.workgroup"></label>
+          <input type="text" id="workgroup" placeholder="WORKGROUP"/>
         </div>
       </div>
-      <div class="muted tiny">Leave UID/GID empty to omit them from the command.</div>
+      <div class="muted tiny" data-i18n="ids.note"></div>
     </div>
 
-    <label for="restart">Restart Policy</label>
+    <label for="restart" data-i18n="restart.label"></label>
     <select id="restart">
-      <option value="no">No</option>
-      <option value="always">Always</option>
-      <option value="unless-stopped" selected>Unless Stopped</option>
-      <option value="on-failure">On Failure</option>
+      <option value="no" data-i18n="restart.no"></option>
+      <option value="always" data-i18n="restart.always"></option>
+      <option value="unless-stopped" selected data-i18n="restart.unless-stopped"></option>
+      <option value="on-failure" data-i18n="restart.on-failure"></option>
     </select>
 
-    <!-- ENV MODE -->
-    <h3 style="margin-top:18px;">Environment Variables</h3>
-    <div class="env-block">
-      <div class="inline">
-        <input type="radio" name="envmode" id="envNone" value="none" checked>
-        <label for="envNone" style="margin:0;">No .env (recommended for multi-user; passwords are in the command)</label>
-      </div>
-
-      <div class="inline">
-        <input type="radio" name="envmode" id="envFile" value="file">
-        <label for="envFile" style="margin:0;">Use external .env file</label>
-      </div>
-      <div id="envFileRow" class="row hidden" style="margin-top:8px;">
-        <div>
-          <label for="envPath">.env file path</label>
-          <input type="text" id="envPath" value="./nas.env" placeholder="./nas.env"/>
+    <!-- Samba options -->
+    <div id="smbOptions">
+      <h3 data-i18n="smb.title"></h3>
+      <div class="wrap-box">
+        <div class="inline" style="gap:16px;">
+          <label class="inline" style="margin:0;" id="dpersonRecycleWrap">
+            <input type="checkbox" id="smbRecycle">
+            <span class="tiny" data-i18n="smb.recycle"></span>
+          </label>
+          <label class="inline" style="margin:0;">
+            <input type="checkbox" id="smbWsdd">
+            <span class="tiny" data-i18n="smb.wsdd"></span>
+          </label>
         </div>
+        <label for="smbGlobal" data-i18n="smb.global"></label>
+        <textarea id="smbGlobal" style="min-height:60px;" data-i18n-ph="smb.globalHint" spellcheck="false"></textarea>
       </div>
+    </div>
 
-      <div class="inline">
-        <input type="radio" name="envmode" id="envEditor" value="editor">
-        <label for="envEditor" style="margin:0;">Build .env here</label>
-      </div>
-      <div id="envEditorPanel" class="hidden" style="margin-top:8px;">
-        <div class="row">
+    <!-- ENV MODE -->
+    <div id="envSection">
+      <h3 data-i18n="env.title"></h3>
+      <div class="env-block">
+        <div class="inline">
+          <input type="radio" name="envmode" id="envNone" value="none" checked>
+          <label for="envNone" style="margin:0;" data-i18n="env.none"></label>
+        </div>
+
+        <div class="inline">
+          <input type="radio" name="envmode" id="envFile" value="file">
+          <label for="envFile" style="margin:0;" data-i18n="env.file"></label>
+        </div>
+        <div id="envFileRow" class="row hidden" style="margin-top:8px;">
           <div>
-            <label for="envFilename">.env filename for command & download</label>
-            <input type="text" id="envFilename" value="./nas.env" placeholder="./nas.env"/>
+            <label for="envPath" data-i18n="env.path"></label>
+            <input type="text" id="envPath" value="./nas.env" placeholder="./nas.env"/>
           </div>
         </div>
 
-        <div class="inline" style="gap:10px; margin-top:6px;">
-          <button type="button" id="btnSyncToEnv" class="btn-small secondary gridbtn">Sync UI → .env</button>
-          <button type="button" id="btnApplyFromEnv" class="btn-small secondary gridbtn">Apply .env → UI</button>
-          <label class="inline" style="margin-left:auto;">
-            <input type="checkbox" id="includeUsersFromEnv"/>
-            <span class="tiny">Include users from .env in command</span>
-          </label>
+        <div class="inline">
+          <input type="radio" name="envmode" id="envEditor" value="editor">
+          <label for="envEditor" style="margin:0;" data-i18n="env.editor"></label>
         </div>
+        <div id="envEditorPanel" class="hidden" style="margin-top:8px;">
+          <div class="row">
+            <div>
+              <label for="envFilename" data-i18n="env.filename"></label>
+              <input type="text" id="envFilename" value="./nas.env" placeholder="./nas.env"/>
+            </div>
+          </div>
 
-        <label for="envText" style="margin-top:10px;">.env contents</label>
-        <textarea id="envText"># Use "Sync UI → .env" to generate this from the current form.</textarea>
+          <div class="inline" style="gap:10px; margin-top:6px;">
+            <button type="button" id="btnSyncToEnv" class="btn-small secondary gridbtn btn-auto" data-i18n="env.sync"></button>
+            <button type="button" id="btnApplyFromEnv" class="btn-small secondary gridbtn btn-auto" data-i18n="env.apply"></button>
+            <label class="inline" style="margin-left:auto;">
+              <input type="checkbox" id="includeUsersFromEnv"/>
+              <span class="tiny" data-i18n="env.include"></span>
+            </label>
+          </div>
 
-        <div class="inline" style="gap:12px;">
-          <button type="button" id="btnValidateEnv" class="btn-small secondary gridbtn">Validate .env</button>
-          <button type="button" class="btn-small success gridbtn" id="btnDownloadEnv">Download .env</button>
-          <span id="envStatus" class="muted"></span>
+          <label for="envText" style="margin-top:10px;" data-i18n="env.contents"></label>
+          <textarea id="envText" spellcheck="false"></textarea>
+
+          <div class="inline" style="gap:12px;">
+            <button type="button" id="btnValidateEnv" class="btn-small secondary gridbtn btn-auto" data-i18n="env.validate"></button>
+            <button type="button" class="btn-small success gridbtn btn-auto" id="btnDownloadEnv" data-i18n="env.download"></button>
+            <span id="envStatus" class="status" aria-live="polite"></span>
+          </div>
+          <ul id="envIssues" class="issues"></ul>
         </div>
       </div>
     </div>
 
+    <div id="plainWarn" class="callout-warn" data-i18n="users.plainWarn"></div>
+
     <!-- USERS -->
-    <h3 style="margin-top:18px;">Users (repeatable <code>-u "user;password"</code>)</h3>
-    <div id="usersWrap" class="users-wrap">
-      <div class="users-grid" style="margin-bottom:6px;">
-        <div class="hdr">Username</div>
-        <div class="hdr">Password</div>
-        <div class="hdr">Remove</div>
-      </div>
-      <div id="usersList"></div>
-      <button type="button" class="secondary btn-small btn-block" id="btnAddUser">+ Add User</button>
-      <div id="usersHint" class="muted tiny" style="margin-top:8px;">
-        Users are included in the command only in **No .env** mode — unless you toggle “Include users from .env in command.”
+    <div id="usersSection">
+      <h3 data-i18n="users.title"></h3>
+      <div id="usersWrap" class="wrap-box">
+        <div class="users-grid hdr-row" style="margin-bottom:6px;">
+          <div class="hdr" data-i18n="users.username"></div>
+          <div class="hdr" data-i18n="users.password"></div>
+          <div class="hdr" data-i18n="users.remove"></div>
+        </div>
+        <div id="usersList"></div>
+        <button type="button" class="secondary btn-small btn-block" id="btnAddUser" data-i18n="users.add"></button>
+        <div id="usersHint" class="muted tiny" style="margin-top:8px;"></div>
       </div>
     </div>
 
     <!-- SHARES -->
-    <h3 style="margin-top:18px;">Shares & Paths (multiple supported)</h3>
-    <div class="shares-wrap">
-      <div class="shares-grid" style="margin-bottom:6px;">
-        <div class="hdr">Host Path</div>
-        <div class="hdr">Share Name</div>
-        <div class="hdr">Allowed Users (comma)</div>
-        <div class="hdr">Add All Users</div>
-        <div class="hdr">Read-only</div>
-        <div class="hdr">Guest</div>
-        <div class="hdr">Remove</div>
-      </div>
-      <div id="sharesList"></div>
-      <button type="button" class="secondary btn-small btn-block" id="btnAddShare">+ Add Share</button>
-      <div class="muted tiny" style="margin-top:8px;">
-        Each host path is bind-mounted into the container at a unique path (e.g. <code>/data0</code>, <code>/data1</code>).  
-        If “Allowed Users” is empty → share is available to all users. Otherwise, only the listed usernames can access it.  
-        <strong>Share names must be unique.</strong>
+    <div id="sharesSection">
+      <h3 data-i18n="shares.title"></h3>
+      <div class="wrap-box">
+        <div class="shares-grid hdr-row" style="margin-bottom:6px;">
+          <div class="hdr" data-i18n="shares.hostPath"></div>
+          <div class="hdr" data-i18n="shares.name"></div>
+          <div class="hdr" data-i18n="shares.allowed"></div>
+          <div class="hdr" data-i18n="shares.addAll"></div>
+          <div class="hdr" data-i18n="shares.ro"></div>
+          <div class="hdr" data-i18n="shares.guest"></div>
+          <div class="hdr" data-i18n="shares.remove"></div>
+        </div>
+        <div id="sharesList"></div>
+        <button type="button" class="secondary btn-small btn-block" id="btnAddShare" data-i18n="shares.add"></button>
+        <div class="muted tiny" style="margin-top:8px;" data-i18n="shares.hint"></div>
       </div>
     </div>
 
-    <div id="error" class="error"></div>
-    <div class="inline" style="justify-content:space-between;"><label class="inline" style="margin:0;"><input type="checkbox" id="singleLineOut" checked><span class="tiny">Output as single line (avoids shell copy issues)</span></label><button onclick="generateCommand()">Generate Docker Command</button></div>
-
-    <div id="outputContainer" class="output-container">
-      <h3>Generated Command:</h3>
-      <div id="output" class="output"></div>
-      <button class="success btn-small" onclick="copyCommand()">Copy</button>
+    <!-- ADVANCED -->
+    <h3 data-i18n="adv.title"></h3>
+    <div class="wrap-box">
+      <label class="inline" style="margin:0 0 8px;">
+        <input type="checkbox" id="advHealth">
+        <span class="tiny" data-i18n="adv.health"></span>
+      </label>
+      <div class="row">
+        <div>
+          <label for="advMemory" data-i18n="adv.memory"></label>
+          <input type="text" id="advMemory" placeholder="512m"/>
+        </div>
+        <div>
+          <label for="advCpus" data-i18n="adv.cpus"></label>
+          <input type="text" id="advCpus" placeholder="1.5"/>
+        </div>
+      </div>
     </div>
+
+    <!-- OUTPUT -->
+    <div class="output-container">
+      <div class="inline" style="justify-content:space-between;">
+        <h3 style="margin:0;" data-i18n="out.title"></h3>
+        <label class="inline" style="margin:0;">
+          <input type="checkbox" id="singleLineOut" checked>
+          <span class="tiny" data-i18n="out.single"></span>
+        </label>
+      </div>
+
+      <div id="errorBox" class="error" role="alert"></div>
+      <div id="warnBox" class="callout-warn hidden">
+        <strong data-i18n="out.warnings"></strong>
+        <ul id="warnList" class="issues"></ul>
+      </div>
+      <div id="noteBox" class="callout-note hidden">
+        <strong data-i18n="out.notes"></strong>
+        <ul id="noteList" class="issues"></ul>
+      </div>
+
+      <div class="tabs" role="tablist">
+        <button type="button" id="tab-run" role="tab" aria-selected="true" data-i18n="out.run"></button>
+        <button type="button" id="tab-compose" role="tab" aria-selected="false" data-i18n="out.compose"></button>
+        <button type="button" id="tab-systemd" role="tab" aria-selected="false" data-i18n="out.systemd"></button>
+      </div>
+      <div id="outText" class="output" tabindex="0"></div>
+      <div id="composeNote" class="muted tiny hidden" data-i18n="out.composeNote"></div>
+
+      <div class="inline out-actions">
+        <button type="button" class="success btn-small gridbtn" id="btnCopy" data-i18n="out.copy"></button>
+        <button type="button" class="secondary btn-small gridbtn hidden" id="btnDownloadCompose" data-i18n="out.downloadCompose"></button>
+        <button type="button" class="secondary btn-small gridbtn hidden" id="btnDownloadSystemd" data-i18n="out.downloadSystemd"></button>
+        <span id="copyStatus" class="status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <footer>
+      <span data-i18n="footer.text"></span>
+      &middot;
+      <a href="https://github.com/dikeckaan/Docker-NAS-Container-Creator" target="_blank" rel="noopener" data-i18n="footer.source"></a>
+    </footer>
   </div>
 
+  <script src="js/command-builder.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
   <script>
-    const $ = (id) => document.getElementById(id);
-
-    /* ---------- Utilities ---------- */
-    function trimCSV(str) { return str.split(",").map(s => s.trim()).filter(Boolean); }
-    function buildShare(flagPath, name, readOnly, guest, allowedUsersCSV) {
-  const browse = "yes";
-  const ro = readOnly ? "yes" : "no";
-  const ga = guest ? "yes" : "no";
-  const usersField = (allowedUsersCSV || "").trim() ? trimCSV(allowedUsersCSV).join(",") : "all";
-  return `-s "${name};${flagPath};${browse};${ro};${ga};${usersField};none"`;
-}
-    function multilineify(parts) { return parts.map((p,i)=> i===0?p:("  "+p)).join(" \\\n"); }
-    function parseEnv(text) {
-      const lines = text.split(/\r?\n/), out = {};
-      for (const raw of lines) {
-        const line = raw.trim(); if (!line || line.startsWith("#")) continue;
-        const eq = line.indexOf("="); if (eq === -1) continue;
-        out[line.slice(0,eq).trim()] = line.slice(eq+1).trim();
-      }
-      return out;
-    }
-    function download(filename, content) {
-      const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a"); a.href = url; a.download = filename.replace(/^.*\//,"");
-      document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },0);
-    }
-
-    /* ---------- Ports (container fixed) ---------- */
-    const allPortsEl = $("allPorts");
-    const portRows = [
-      { exp: $("exp-137"), host: $("host-137"), cport: 137, proto: "udp" },
-      { exp: $("exp-138"), host: $("host-138"), cport: 138, proto: "udp" },
-      { exp: $("exp-139"), host: $("host-139"), cport: 139, proto: "tcp" },
-      { exp: $("exp-445"), host: $("host-445"), cport: 445, proto: "tcp" },
-    ];
-    function syncAllPortsToggle(){
-      const on = allPortsEl.checked;
-      portRows.forEach(r => {
-        r.exp.checked = on;
-        if (on && !r.host.value.trim()) r.host.value = String(r.cport);
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () { /* offline support is optional */ });
       });
     }
-    allPortsEl.addEventListener("change", syncAllPortsToggle);
-
-    // Ensure 137/138 are exposed when NetBIOS (-n) is enabled
-    const smbNmbdEl = document.getElementById("smbNmbd");
-    function ensureNetbiosPorts(){
-      if (!smbNmbdEl) return;
-      if (smbNmbdEl.checked){
-        const p137 = portRows.find(r => r.cport===137 && r.proto==="udp");
-        const p138 = portRows.find(r => r.cport===138 && r.proto==="udp");
-        [p137,p138].forEach(r=>{ if(!r) return; r.exp.checked = true; if(!r.host.value.trim()) r.host.value=String(r.cport); });
-      }
-    }
-    if (smbNmbdEl) smbNmbdEl.addEventListener("change", ensureNetbiosPorts);
-
-    function buildPortFlagsFixed() {
-      const parts = [];
-      portRows.forEach(r => {
-        if (!r.exp.checked) return;
-        const host = (r.host.value || "").trim() || String(r.cport);
-        parts.push(`-p ${host}:${r.cport}/${r.proto}`);
-      });
-      return parts.join(" ");
-    }
-
-    /* ---------- ENV mode ---------- */
-    const envNoneEl=$("envNone"), envFileEl=$("envFile"), envEditorEl=$("envEditor");
-    const envFileRow=$("envFileRow"), envEditorPanel=$("envEditorPanel");
-    const includeUsersFromEnvEl=$("includeUsersFromEnv");
-    const usersWrap=$("usersWrap"), usersHint=$("usersHint"), inlineCreds=$("inlineCreds");
-    function refreshEnvMode(){
-      inlineCreds.classList.add("hidden"); envFileRow.classList.add("hidden"); envEditorPanel.classList.add("hidden"); usersWrap.classList.remove("hidden");
-      if (envNoneEl.checked){ inlineCreds.classList.remove("hidden"); usersWrap.classList.remove("hidden"); usersHint.textContent='Users are included in the command as -u entries.'; }
-      else if (envFileEl.checked){ envFileRow.classList.remove("hidden"); usersWrap.classList.add("hidden"); }
-      else if (envEditorEl.checked){ envEditorPanel.classList.remove("hidden"); usersWrap.classList.add("hidden"); }
-    }
-    [envNoneEl,envFileEl,envEditorEl].forEach(el=>el.addEventListener("change",refreshEnvMode));
-    document.addEventListener("DOMContentLoaded", ()=>{ refreshEnvMode(); syncAllPortsToggle(); ensureNetbiosPorts(); });
-
-    /* ---------- ENV editor actions (Sync/Apply) ---------- */
-    const envTextEl = $("envText");
-    const envFilenameEl = $("envFilename");
-    $("btnSyncToEnv").addEventListener("click", () => {
-      envTextEl.value = buildEnvFromUI();
-      $("envStatus").textContent = "Synced UI → .env";
-      $("envStatus").style.color = "green";
-    });
-    $("btnApplyFromEnv").addEventListener("click", () => {
-      applyEnvToUI(envTextEl.value);
-      $("envStatus").textContent = "Applied .env → UI";
-      $("envStatus").style.color = "green";
-    });
-    $("btnValidateEnv").addEventListener("click", () => { $("envStatus").textContent="Checked ✔"; $("envStatus").style.color="green"; });
-    $("btnDownloadEnv").addEventListener("click", () => {
-      const filename = envFilenameEl.value.trim() || "nas.env";
-      download(filename, envTextEl.value);
-      $("envStatus").textContent = `Downloaded ${filename}`;
-      $("envStatus").style.color = "green";
-    });
-
-    /* ---------- Users ---------- */
-    const usersList=$("usersList"), btnAddUser=$("btnAddUser");
-    function userRowTemplate(username="user", password="password"){
-      return `
-        <div class="users-grid">
-          <input type="text" class="u-username" value="${username}" placeholder="username"/>
-          <input type="password" class="u-password" value="${password}" placeholder="password"/>
-          <div class="cell-actions">
-            <button type="button" class="danger btn-icon gridbtn u-remove">X</button>
-          </div>
-        </div>`;
-    }
-    function addUserRow(u,p){ const w=document.createElement("div"); w.innerHTML=userRowTemplate(u,p); const row=w.firstElementChild; usersList.appendChild(row); row.querySelector(".u-remove").addEventListener("click",()=>row.remove()); }
-    addUserRow("user","password"); btnAddUser.addEventListener("click",()=>addUserRow("",""));
-    function getCurrentUsernames(){ return [...usersList.querySelectorAll(".u-username")].map(i=>i.value.trim()).filter(Boolean); }
-    function getCurrentUsers(){ return [...usersList.querySelectorAll(".users-grid")].map(r=>({ username:r.querySelector(".u-username").value.trim(), password:r.querySelector(".u-password").value.trim() })).filter(u=>u.username||u.password); }
-
-    /* ---------- Shares ---------- */
-    const sharesList=$("sharesList"), btnAddShare=$("btnAddShare");
-    function shareRowTemplate(idx, hostPath="/path/to/server", shareName="shared", allowed="", ro=false, guest=false){
-      const mountPath=`/data${idx}`;
-      return `
-        <div class="shares-grid" data-index="${idx}">
-          <input type="text" class="hostPath" value="${hostPath}" placeholder="/absolute/host/path"/>
-          <input type="text" class="shareName" value="${shareName}" placeholder="share-name"/>
-          <input type="text" class="allowedUsers" value="${allowed}" placeholder="user1,user2"/>
-          <div class="cell-right">
-            <button type="button" class="secondary btn-small gridbtn btnAllUsers">Add All Users</button>
-          </div>
-          <div class="checkcell">
-            <input type="checkbox" class="readOnly" ${ro?"checked":""}/><span>RO</span>
-          </div>
-          <div class="checkcell">
-            <input type="checkbox" class="guest" ${guest?"checked":""}/><span>Guest</span>
-          </div>
-          <div class="cell-right">
-            <button type="button" class="danger btn-icon gridbtn btnRemove">X</button>
-          </div>
-          <input type="hidden" class="mountPath" value="${mountPath}"/>
-        </div>`;
-    }
-    function refreshIndices(){ [...sharesList.querySelectorAll(".shares-grid")].forEach((row,i)=>{ row.dataset.index=i; const hidden=row.querySelector(".mountPath"); if (hidden) hidden.value=`/data${i}`; }); }
-    function wireShareRow(row){
-      row.querySelector(".btnRemove").addEventListener("click",()=>{ row.remove(); refreshIndices(); });
-      row.querySelector(".btnAllUsers").addEventListener("click",()=>{ const names=getCurrentUsernames(); row.querySelector(".allowedUsers").value=names.join(","); });
-    }
-    function addShareRow(hostPath,shareName,allowed,ro,guest){ const idx=sharesList.querySelectorAll(".shares-grid").length; const w=document.createElement("div"); w.innerHTML=shareRowTemplate(idx,hostPath,shareName,allowed,ro,guest); const row=w.firstElementChild; sharesList.appendChild(row); wireShareRow(row); }
-    addShareRow("/path/to/server","shared","",false,false);
-    btnAddShare.addEventListener("click",()=>addShareRow("","shared","",false,false));
-
-    /* ---------- .env Sync helpers ---------- */
-    function buildEnvFromUI() {
-      const lines = [];
-      // Ports (only host bindings & exposure flags)
-      const selected = portRows.filter(r => r.exp.checked);
-      if (selected.length) {
-        lines.push(`PORTS_SELECTED=${selected.map(r=>`${r.cport}/${r.proto}`).join(",")}`);
-        lines.push(`PORTS_HOST=${selected.map(r=> (r.host.value||r.cport)).join(",")}`);
-      } else {
-        lines.push(`PORTS_SELECTED=`);
-        lines.push(`PORTS_HOST=`);
-      }
-
-      const uid = $("uid").value.trim(); const gid = $("gid").value.trim();
-      if (uid) lines.push(`USERID=${uid}`);
-      if (gid) lines.push(`GROUPID=${gid}`);
-      lines.push(`RESTART=${$("restart").value}`);
-
-      const users = getCurrentUsers().filter(u => u.username && u.password);
-      if (users.length) lines.push(`USERS=${users.map(u => `${u.username}:${u.password}`).join(",")}`);
-
-      const rows = [...sharesList.querySelectorAll(".shares-grid")];
-      lines.push(`SHARE_COUNT=${rows.length}`);
-      rows.forEach((row, i) => {
-        const hostPath = row.querySelector(".hostPath").value.trim();
-        const shareName = row.querySelector(".shareName").value.trim() || `share${i}`;
-        const allowedUsers = row.querySelector(".allowedUsers").value.trim();
-        const ro = row.querySelector(".readOnly").checked ? "yes" : "no";
-        const guest = row.querySelector(".guest").checked ? "yes" : "no";
-        const mountPath = `/data${i}`;
-        lines.push(`MOUNT_${i}=${hostPath}:${mountPath}`);
-        lines.push(`SHARE_${i}=name=${shareName};path=${mountPath};ro=${ro};guest=${guest};users=${allowedUsers||"all"}`);
-      });
-      return lines.join("\n");
-    }
-
-    function applyEnvToUI(text) {
-      const env = parseEnv(text);
-
-      // Ports
-      const sel = (env.PORTS_SELECTED||"").split(",").map(s => s.trim()).filter(Boolean);
-      const hosts = (env.PORTS_HOST||"").split(",").map(s => s.trim()).filter(Boolean);
-      const selSet = new Set(sel);
-      portRows.forEach((r, idx) => {
-        const key = `${r.cport}/${r.proto}`;
-        r.exp.checked = selSet.has(key);
-        // host mapping aligned by order of selected keys
-        const pos = sel.indexOf(key);
-        if (pos !== -1 && hosts[pos]) r.host.value = hosts[pos];
-        else if (!r.host.value) r.host.value = r.cport;
-      });
-      allPortsEl.checked = portRows.every(r => r.exp.checked);
-
-      // UID/GID/Restart
-      $("uid").value = env.USERID || "";
-      $("gid").value = env.GROUPID || "";
-      if (env.RESTART) $("restart").value = env.RESTART;
-
-      // Users
-      if (env.USERS) {
-        usersList.innerHTML = "";
-        env.USERS.split(",").forEach(pair => {
-          const [u,p] = pair.split(":");
-          addUserRow(u||"", p||"");
-        });
-      }
-
-      // Shares
-      sharesList.innerHTML = "";
-      let count = 0;
-      if (env.SHARE_COUNT && /^\d+$/.test(env.SHARE_COUNT)) count = parseInt(env.SHARE_COUNT, 10);
-      else Object.keys(env).forEach(k => { const m=k.match(/^SHARE_(\d+)$/); if (m) count=Math.max(count,parseInt(m[1],10)+1); });
-
-      for (let i = 0; i < count; i++) {
-        const m = env[`MOUNT_${i}`];
-        const s = env[`SHARE_${i}`];
-        if (!m || !s) continue;
-        const hostPath = (m.split(":")[0] || "").trim();
-        const parts = Object.fromEntries(
-          s.split(";").map(kv => {
-            const [k,v] = kv.split("=");
-            return [(k||"").trim(), (v||"").trim()];
-          })
-        );
-        addShareRow(hostPath, parts.name || `share${i}`, parts.users==="all"?"":parts.users, parts.ro==="yes", parts.guest==="yes");
-      }
-      refreshIndices();
-    }
-
-    /* ---------- Generate command ---------- */
-    function generateCommand(){
-      const name=$("name").value.trim(), restart=$("restart").value, errorEl=$("error"); errorEl.textContent="";
-
-      // Shares
-      const rows=[...sharesList.querySelectorAll(".shares-grid")]; if (rows.length===0){ errorEl.textContent="Add at least one share."; return; }
-      const shares=[];
-      for (const row of rows){
-        const hostPath=row.querySelector(".hostPath").value.trim();
-        const shareName=row.querySelector(".shareName").value.trim();
-        const allowedUsers=row.querySelector(".allowedUsers").value.trim();
-        const ro=row.querySelector(".readOnly").checked;
-        const guest=row.querySelector(".guest").checked;
-        const mountPath=row.querySelector(".mountPath").value.trim();
-        if (!hostPath){ errorEl.textContent="Every share needs a Host Path."; return; }
-        if (!shareName){ errorEl.textContent="Every share needs a Share Name."; return; }
-        shares.push({hostPath,shareName,allowedUsers,ro,guest,mountPath});
-      }
-      // Unique share names
-      const seen=new Map(), dups=new Set();
-      for (const s of shares){ const key=s.shareName.toLowerCase(); if (seen.has(key)) dups.add(s.shareName); else seen.set(key,true); }
-      if (dups.size){ errorEl.textContent=`Share names must be unique. Duplicates found: ${[...dups].join(", ")}`; return; }
-
-      // ENV / Users
-      const envEditorMode = envEditorEl.checked;
-      let useEnv = envFileEl.checked || envEditorMode;
-      let envFilePath = envFileEl.checked ? $("envPath").value.trim() : (envEditorMode ? $("envFilename").value.trim() || "./nas.env" : "");
-      if (envFileEl.checked && !envFilePath){ errorEl.textContent="Please provide a path to your external .env file."; return; }
-
-      let users = [];
-      if (envNoneEl.checked) {
-        users = getCurrentUsers();
-        if (users.length===0){ errorEl.textContent="Add at least one user (or switch to a .env mode)."; return; }
-        for (const u of users){ if (!u.username||!u.password){ errorEl.textContent="Each user needs both username and password."; return; } }
-      } else if (envEditorMode && $("includeUsersFromEnv").checked) {
-        const envObj = parseEnv($("envText").value);
-        if (envObj.USERS) {
-          users = envObj.USERS.split(",").map(p => {
-            const [u,pw] = p.split(":");
-            return {username:(u||"").trim(), password:(pw||"").trim()};
-          }).filter(u => u.username && u.password);
-        }
-      }
-
-      // Validate share allowed users against user list (when users are in command)
-      if (!useEnv || (envEditorMode && $("includeUsersFromEnv").checked)) {
-        const nameSet = new Set(users.map(u => u.username));
-        for (const s of shares) {
-          if (!s.allowedUsers) continue;
-          const missing = trimCSV(s.allowedUsers).filter(n => !nameSet.has(n));
-          if (missing.length) { errorEl.textContent = `Share "${s.shareName}" lists unknown user(s): ${missing.join(", ")}.`; return; }
-        }
-      }
-
-      // Build command
-      const parts=["docker run -d"];
-      if (name) parts.push(`--name ${name}`);
-
-      // Ports
-      const portFlags = buildPortFlagsFixed();
-      if (portFlags) parts.push(portFlags);
-
-      // Mounts
-      for (let i=0;i<shares.length;i++){ parts.push(`-v ${shares[i].hostPath}:/data${i}`); }
-
-      // Env / UID/GID
-      if (useEnv) parts.push(`--env-file ${envFilePath}`);
-      else {
-        const uid=$("uid").value.trim(), gid=$("gid").value.trim();
-        if (uid) parts.push(`-e USERID=${uid}`);
-        if (gid) parts.push(`-e GROUPID=${gid}`);
-      }
-
-      parts.push(`--restart ${restart}`);
-      parts.push(`dperson/samba`);
-      // Samba feature toggles
-      if (document.getElementById("smbNmbd").checked) parts.push("-n");
-      if (document.getElementById("smbPermFix").checked) parts.push("-p");
-
-      // Users in command?
-      if (!useEnv || (envEditorMode && $("includeUsersFromEnv").checked)) {
-        for (const u of users) parts.push(`-u "${u.username};${u.password}"`);
-      }
-
-      // Shares
-      for (let i=0;i<shares.length;i++){
-        const s=shares[i];
-        parts.push(buildShare(`/data${i}`, s.shareName, s.ro, s.guest, s.allowedUsers));
-      }
-
-      const singleLine = document.getElementById("singleLineOut") && document.getElementById("singleLineOut").checked;
-$("output").textContent = singleLine ? parts.join(" ") : multilineify(parts);
-$("outputContainer").style.display = "block";
-    }
-
-    function copyCommand(){ navigator.clipboard.writeText($("output").textContent).then(()=>alert("Command copied!")); }
   </script>
 </body>
 </html>
